@@ -1,0 +1,15 @@
+name = "cat-pet-daily"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# 改成你的 GitHub 用户名和仓库名
+REPO_OWNER = "xuanzhuwu123"
+REPO_NAME = "cat-pet-daily"
+BRANCH = "main"
+# 网页的地址（GitHub Pages），多个用逗号分隔
+ALLOWED_ORIGINS = "https://xuanzhuwu123.github.io"
+
+# 密钥不要写在这里，用命令设置：
+#   npx wrangler secret put GITHUB_TOKEN
+#   npx wrangler secret put TEAM_PASSWORD

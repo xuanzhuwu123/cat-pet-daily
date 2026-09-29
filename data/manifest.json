@@ -1,0 +1,14 @@
+{
+ "config": {
+  "title": "橘猫组每日打卡",
+  "startDate": "2026-09-28",
+  "days": 30,
+  "members": [
+   { "id": "m1", "name": "组员一" },
+   { "id": "m2", "name": "组员二" },
+   { "id": "m3", "name": "组员三" },
+   { "id": "m4", "name": "组员四" }
+  ]
+ },
+ "entries": []
+}
