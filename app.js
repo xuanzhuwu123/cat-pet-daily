@@ -3,7 +3,7 @@ import { WORKER_URL, REPO, BRANCH } from "./site-config.js";
 const MAX_BYTES = 25 * 1024 * 1024;
 const THUMB_PX = 480;
 const WEEK = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-const COLORS = ["#E0741A", "#2F7ED8", "#1F9D6B", "#B04BC8", "#C9A21B", "#D2455A", "#4B8F99", "#7A6FD0"];
+const COLORS = ["#F59A4A", "#7FB7E6", "#8CCB9B", "#E6A3D0", "#F2C94C", "#F28B82", "#86C5C9", "#B4A7E8"];
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
 const S = { config: null, entries: [], sel: null, me: null, busy: false, error: "" };
