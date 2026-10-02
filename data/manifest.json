@@ -4,11 +4,36 @@
   "startDate": "2026-09-28",
   "days": 30,
   "members": [
-   { "id": "m1", "name": "组员一" },
-   { "id": "m2", "name": "组员二" },
-   { "id": "m3", "name": "组员三" },
-   { "id": "m4", "name": "组员四" }
+   {
+    "id": "m1",
+    "name": "组员一"
+   },
+   {
+    "id": "m2",
+    "name": "组员二"
+   },
+   {
+    "id": "m3",
+    "name": "组员三"
+   },
+   {
+    "id": "m4",
+    "name": "组员四"
+   }
   ]
  },
- "entries": []
+ "entries": [
+  {
+   "id": "muqe63wdixsu",
+   "member": "m1",
+   "day": "2026-10-02",
+   "note": "�Զ����ԣ�����ɾ��",
+   "time": "2026-10-02T03:16:40.381Z",
+   "kind": "file",
+   "name": "�ϴ�����.txt",
+   "type": "text/plain",
+   "size": 12,
+   "path": "daily/m1/2026-10-02/muqe63wdixsu.txt"
+  }
+ ]
 }
