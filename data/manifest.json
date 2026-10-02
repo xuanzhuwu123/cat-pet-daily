@@ -59,6 +59,18 @@
    "type": "video/mp4",
    "size": 1694717,
    "path": "daily/2026-10-02/muqpv128n22l.mp4"
+  },
+  {
+   "id": "muqpvyg8euz1",
+   "day": "2026-09-28",
+   "note": "",
+   "time": "2026-10-02T08:44:42.152Z",
+   "kind": "file",
+   "name": "e4f8d3db543a91ff9ba3e8f3591205e9.png",
+   "type": "image/png",
+   "size": 41624,
+   "path": "daily/2026-09-28/muqpvyg8euz1.png",
+   "thumb": "daily/2026-09-28/muqpvyg8euz1.thumb.webp"
   }
  ]
 }
