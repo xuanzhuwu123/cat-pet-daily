@@ -2,8 +2,8 @@
   color-scheme:light;
   --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#E7EBF1; --ink:#18202B; --muted:#5B6576;
   --line:#D5DBE4; --accent:#E0741A; --accent-ink:#8C4206; --danger:#B42318; --ok:#1F7A4D;
-  --display:"ZCOOL QingKe HuangYou","PingFang SC","Microsoft YaHei",sans-serif;
-  --body:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --display:"Do Hyeon","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){

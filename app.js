@@ -2,7 +2,7 @@ import { WORKER_URL, REPO, BRANCH } from "./site-config.js";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const THUMB_PX = 480;
-const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+const WEEK = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 const COLORS = ["#E0741A", "#2F7ED8", "#1F9D6B", "#B04BC8", "#C9A21B", "#D2455A", "#4B8F99", "#7A6FD0"];
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
@@ -90,7 +90,7 @@ async function loadManifest() {
     if (r.ok) { applyManifest(await r.json()); S.error = ""; }
     else throw new Error();
   } catch {
-    if (!S.config) S.error = "读取数据失败，请检查网络后刷新。";
+    if (!S.config) S.error = "데이터를 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.";
     else S.error = S.error || "";
   }
   render();
@@ -120,11 +120,11 @@ function render() {
   const nowNo = Math.min(Math.max(dayNo(t), 0), DAYS());
 
   if (S.config && S.config.title) document.title = S.config.title;
-  $("range").textContent = S.config ? `${start()} → ${days[days.length - 1]}` : "加载中……";
+  $("range").textContent = S.config ? `${start()} → ${days[days.length - 1]}` : "불러오는 중…";
   const done = ids.reduce((a, id) => a + days.filter(d => d <= t && c.get(id + "|" + d)).length, 0);
   const possible = ids.length * nowNo;
   $("progress").replaceChildren(
-    h("div", { class: "big" }, h("span", {}, "第 ", h("b", {}, nowNo), ` / ${DAYS()} 天`), h("span", {}, possible ? `全组完成 ${Math.round(done / possible * 100)}%` : "")),
+    h("div", { class: "big" }, h("span", {}, h("b", {}, nowNo), `일차 / ${DAYS()}일`), h("span", {}, possible ? `팀 달성률 ${Math.round(done / possible * 100)}%` : "")),
     h("div", { class: "bar" }, h("i", { style: `width:${nowNo / DAYS() * 100}%` })));
 
   const notice = $("notice");
@@ -134,7 +134,7 @@ function render() {
 
   // 打卡墙
   const grid = $("grid");
-  const hr = h("tr", {}, h("th", { class: "who" }, "组员"));
+  const hr = h("tr", {}, h("th", { class: "who" }, "멤버"));
   for (const d of days) {
     const cls = [d === t ? "today" : "", d === S.sel ? "sel" : ""].join(" ").trim() || null;
     hr.append(h("th", { class: cls, title: `${d} ${WEEK[parse(d).getDay()]}` }, h("b", {}, dayNo(d)), md(d)));
@@ -144,8 +144,8 @@ function render() {
     const nm = nameOf(id);
     const total = days.filter(d => c.get(id + "|" + d)).length;
     const tr = h("tr", {}, h("th", { class: "who" },
-      h("div", { class: "nm" }, h("span", { class: "dot", style: `background:${colorOf(id)}` }), h("span", {}, nm + (id === S.me ? "（我）" : ""))),
-      h("small", {}, `${total} 天 · 连续 ${streak(id, c)}`)));
+      h("div", { class: "nm" }, h("span", { class: "dot", style: `background:${colorOf(id)}` }), h("span", {}, nm + (id === S.me ? " (나)" : ""))),
+      h("small", {}, `${total}일 · 연속 ${streak(id, c)}`)));
     for (const d of days) {
       const n = c.get(id + "|" + d) || 0;
       let cls = "cell";
@@ -154,7 +154,7 @@ function render() {
       else cls += n >= 3 ? " l3" : n === 2 ? " l2" : " l1";
       if (id === S.me && d === t && !n) cls += " me-today";
       tr.append(h("td", { class: d === S.sel ? "sel" : null },
-        h("button", { class: cls, title: `${nm} · ${d} · ${n} 个`, "aria-label": `${nm} ${d} ${n} 个`, onclick: () => select(d) }, n || "")));
+        h("button", { class: cls, title: `${nm} · ${d} · ${n}개`, "aria-label": `${nm} ${d} ${n}개`, onclick: () => select(d) }, n || "")));
     }
     tb.append(tr);
   }
@@ -171,21 +171,21 @@ function renderDay(t, ids) {
   const list = S.entries.filter(e => e.day === sel).sort((a, b) => (a.time || "") < (b.time || "") ? -1 : 1);
   const kids = [h("div", { class: "day-title" },
     h("span", { class: "n" }, `Day ${no}`),
-    h("h2", {}, `${d.getMonth() + 1} 月 ${d.getDate()} 日 ${WEEK[d.getDay()]}`),
-    h("span", { class: "d" }, sel === t ? "今天" : sel > t ? "还没到" : `${diff(t, sel)} 天前`),
+    h("h2", {}, `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEK[d.getDay()]}`),
+    h("span", { class: "d" }, sel === t ? "오늘" : sel > t ? "아직 전" : `${diff(t, sel)}일 전`),
     h("div", { class: "nav" },
-      h("button", { class: "btn", disabled: no <= 1, onclick: () => select(addDays(sel, -1)) }, "← 前一天"),
-      h("button", { class: "btn", disabled: no >= DAYS(), onclick: () => select(addDays(sel, 1)) }, "后一天 →")))];
-  if (!list.length) kids.push(h("p", { class: "empty" }, sel > t ? "这一天还没到。" : "这一天还没有人上传。"));
+      h("button", { class: "btn", disabled: no <= 1, onclick: () => select(addDays(sel, -1)) }, "← 이전 날"),
+      h("button", { class: "btn", disabled: no >= DAYS(), onclick: () => select(addDays(sel, 1)) }, "다음 날 →")))];
+  if (!list.length) kids.push(h("p", { class: "empty" }, sel > t ? "아직 오지 않은 날이에요." : "이 날은 아직 아무도 올리지 않았어요."));
   for (const id of ids) {
     const mine = list.filter(e => e.member === id);
     if (!mine.length) continue;
     kids.push(h("div", { class: "group" },
-      h("h3", {}, h("span", { class: "dot", style: `background:${colorOf(id)}` }), nameOf(id), h("em", {}, `${mine.length} 个`)),
+      h("h3", {}, h("span", { class: "dot", style: `background:${colorOf(id)}` }), nameOf(id), h("em", {}, `${mine.length}개`)),
       h("div", { class: "files" }, mine.map(fileCard))));
   }
   const lazy = ids.filter(id => !list.some(e => e.member === id));
-  if (list.length && lazy.length && sel <= t) kids.push(h("p", { class: "missing" }, "这天还没传：" + lazy.map(nameOf).join("、")));
+  if (list.length && lazy.length && sel <= t) kids.push(h("p", { class: "missing" }, "아직 안 올린 사람: " + lazy.map(nameOf).join(", ")));
   main.replaceChildren(...kids);
 }
 
@@ -207,21 +207,21 @@ function fileCard(e) {
       v.addEventListener("error", () => { if (!v.dataset.retried) { v.dataset.retried = "1"; v.src = RAW_BASE + encodePath(e.path); } }, { once: true });
       ev.currentTarget.replaceChildren(v);
       ev.currentTarget.onclick = null;
-    } }, h("span", { class: "play" }, h("b", {}, "▶"), `播放 · ${sizeText(e.size || 0)}`));
+    } }, h("span", { class: "play" }, h("b", {}, "▶"), `재생 · ${sizeText(e.size || 0)}`));
   } else {
     const ext = isLink ? "LINK" : (e.name.split(".").pop() || "FILE").toUpperCase().slice(0, 5);
     thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" }, h("span", { class: "ext" }, ext));
   }
   const late = e.time && fmt(new Date(e.time)) > e.day;
-  const del = e.member === S.me ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "删除") : null;
+  const del = e.member === S.me ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제") : null;
   return h("div", { class: "file" }, thumb,
     h("div", { class: "meta" },
-      h("a", { href, target: "_blank", rel: "noopener" }, e.name || "未命名"),
+      h("a", { href, target: "_blank", rel: "noopener" }, e.name || "이름 없음"),
       e.note ? h("p", {}, e.note) : null,
       h("div", { class: "row" },
         h("span", {}, timeText(e.time)),
         e.size ? h("span", {}, sizeText(e.size)) : null,
-        late ? h("span", { class: "tag late" }, "补交") : null,
+        late ? h("span", { class: "tag late" }, "늦게 제출") : null,
         del)));
 }
 
@@ -231,12 +231,12 @@ function renderSide(t) {
   $("uploader").hidden = !logged;
   const sel = $("memberSelect");
   if (!logged && S.config && sel.options.length !== members().length + 1) {
-    sel.replaceChildren(h("option", { value: "" }, "选择你的名字"), ...members().map(m => h("option", { value: m.id }, m.name)));
+    sel.replaceChildren(h("option", { value: "" }, "이름을 선택하세요"), ...members().map(m => h("option", { value: m.id }, m.name)));
   }
   if (logged) {
-    $("whoami").textContent = `当前身份：${nameOf(S.me)}`;
+    $("whoami").textContent = `현재: ${nameOf(S.me)}`;
     const no = S.sel ? dayNo(S.sel) : 0;
-    $("upTitle").textContent = S.sel === t ? "上传到今天" : S.sel > t ? "这一天还没到" : `补交到 Day ${no}`;
+    $("upTitle").textContent = S.sel === t ? "오늘 올리기" : S.sel > t ? "아직 오지 않은 날이에요" : `Day ${no}에 늦게 제출`;
     $("submitBtn").disabled = S.busy || !S.sel || S.sel > t;
   }
 }
@@ -260,10 +260,10 @@ async function api(path, body) {
   return data;
 }
 function errText(e) {
-  if (e.code === "too_large") return "文件超过 25 MB，请压缩或改用链接。";
-  if (e.code === "busy") return "同时上传的人太多，请再点一次。";
-  if (e.code === "not_found") return "这条记录已经被删掉了。";
-  return "操作失败，请检查网络后重试。";
+  if (e.code === "too_large") return "파일이 25MB를 넘어요. 압축하거나 링크로 올려 주세요.";
+  if (e.code === "busy") return "동시에 올리는 사람이 많아요. 한 번 더 눌러 주세요.";
+  if (e.code === "not_found") return "이미 삭제된 항목이에요.";
+  return "작업에 실패했어요. 네트워크를 확인하고 다시 시도해 주세요.";
 }
 
 // 把文件读成 base64，拼成 GitHub blob 接口要的 JSON（不做大字符串拼接）
@@ -299,19 +299,19 @@ async function submit() {
   const files = [...$("fileInput").files];
   const link = $("linkInput").value.trim();
   const note = $("noteInput").value.trim().slice(0, 500);
-  if (!files.length && !link) return setStatus("先选文件，或者填一个链接。", "err");
-  if (link && !/^https?:\/\/\S+$/i.test(link)) return setStatus("链接要以 http:// 或 https:// 开头。", "err");
+  if (!files.length && !link) return setStatus("파일을 고르거나 링크를 입력해 주세요.", "err");
+  if (link && !/^https?:\/\/\S+$/i.test(link)) return setStatus("링크는 http:// 또는 https:// 로 시작해야 해요.", "err");
   const big = files.find(f => f.size > MAX_BYTES);
-  if (big) return setStatus(`${big.name} 超过 25 MB，请压缩或放网盘后贴链接。`, "err");
+  if (big) return setStatus(`${big.name}: 25MB를 넘어요. 압축하거나 클라우드에 올린 뒤 링크를 붙여 주세요.`, "err");
   const empty = files.find(f => !f.size);
-  if (empty) return setStatus(`${empty.name} 是空文件。`, "err");
+  if (empty) return setStatus(`${empty.name}: 빈 파일이에요.`, "err");
 
   S.busy = true; render();
   const day = S.sel;
   let ok = 0;
   try {
     for (const f of files) {
-      setStatus(`正在上传 ${f.name}（${ok + 1}/${files.length}）……`);
+      setStatus(`${f.name} 올리는 중… (${ok + 1}/${files.length})`);
       const { sha: fileSha } = await api("/blob", await blobBody(f));
       const th = await makeThumb(f);
       const thumbSha = th ? (await api("/blob", await blobBody(th))).sha : null;
@@ -329,9 +329,9 @@ async function submit() {
     }
     $("fileInput").value = ""; $("linkInput").value = ""; $("noteInput").value = "";
     $("picked").hidden = true;
-    setStatus(`已上传 ${ok} 项到 Day ${dayNo(day)}。`, "ok");
+    setStatus(`Day ${dayNo(day)}에 ${ok}개를 올렸어요.`, "ok");
   } catch (e) {
-    setStatus((ok ? `已上传 ${ok} 项，其余失败：` : "") + errText(e), "err");
+    setStatus((ok ? `${ok}개는 올렸지만 나머지는 실패했어요: ` : "") + errText(e), "err");
   } finally {
     S.busy = false; render();
   }
@@ -339,11 +339,11 @@ async function submit() {
 
 async function removeEntry(e, btn) {
   if (!btn.classList.contains("armed")) {
-    btn.classList.add("armed"); btn.textContent = "确认删除？";
-    setTimeout(() => { if (btn.isConnected) { btn.classList.remove("armed"); btn.textContent = "删除"; } }, 3000);
+    btn.classList.add("armed"); btn.textContent = "정말 삭제할까요?";
+    setTimeout(() => { if (btn.isConnected) { btn.classList.remove("armed"); btn.textContent = "삭제"; } }, 3000);
     return;
   }
-  btn.disabled = true; btn.textContent = "删除中……";
+  btn.disabled = true; btn.textContent = "삭제 중…";
   try {
     const res = await api("/commit", JSON.stringify({ action: "delete", id: e.id }));
     applyManifest(res.manifest);
@@ -357,7 +357,7 @@ function login(ev) {
   ev.preventDefault();
   const me = $("memberSelect").value;
   const st = $("loginStatus");
-  if (!me) { st.textContent = "先选你的名字。"; st.className = "status err"; return; }
+  if (!me) { st.textContent = "먼저 이름을 선택하세요."; st.className = "status err"; return; }
   st.textContent = "";
   S.me = me; saveLogin();
   render();

@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>橘猫组每日打卡</title>
+<title>치즈냥 팀 매일 인증</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="style.css">
 <script type="module" src="app.js"></script>
 </head>
@@ -14,8 +14,8 @@
 <div class="wrap">
   <header>
     <div>
-      <p class="eyebrow">3D 桌宠项目 · 组员每日上传</p>
-      <h1 id="title">橘猫组<span>每日打卡</span></h1>
+      <p class="eyebrow">3D 데스크톱 펫 프로젝트 · 멤버 매일 업로드</p>
+      <h1 id="title">치즈냥 팀 <span>매일 인증</span></h1>
       <p class="range" id="range"></p>
     </div>
     <div class="progress" id="progress"></div>
@@ -25,8 +25,8 @@
 
   <section class="board">
     <div class="board-head">
-      <h2>30 天上传墙</h2>
-      <div class="legend">没传 <i class="lg miss"></i><i class="lg l1"></i><i class="lg l2"></i><i class="lg l3"></i> 3 个以上 · 点格子看当天</div>
+      <h2>30일 업로드 보드</h2>
+      <div class="legend">안 올림 <i class="lg miss"></i><i class="lg l1"></i><i class="lg l2"></i><i class="lg l3"></i> 3개 이상 · 칸을 누르면 그날을 볼 수 있어요</div>
     </div>
     <div class="scroll"><table id="grid"></table></div>
   </section>
@@ -36,34 +36,34 @@
 
     <aside class="side">
       <form class="panel" id="loginForm" hidden>
-        <h2>选好名字就能上传</h2>
-        <label>我是
+        <h2>이름만 고르면 바로 올릴 수 있어요</h2>
+        <label>나는
           <select id="memberSelect"></select>
         </label>
-        <button class="btn primary" type="submit" id="loginBtn">确定</button>
+        <button class="btn primary" type="submit" id="loginBtn">확인</button>
         <p class="status" id="loginStatus" role="status"></p>
       </form>
 
       <div class="panel" id="uploader" hidden>
         <div class="who-bar">
-          <h2 id="upTitle">上传到今天</h2>
-          <button class="link-btn" id="logoutBtn" type="button">换人</button>
+          <h2 id="upTitle">오늘 올리기</h2>
+          <button class="link-btn" id="logoutBtn" type="button">사람 바꾸기</button>
         </div>
         <p class="hint" id="whoami"></p>
         <div class="drop" id="drop" tabindex="0" role="button">
-          <b>点这里选文件，或拖进来</b>
-          <span>任何格式都可以，单个不超过 25 MB</span>
+          <b>여기를 눌러 파일을 고르거나 끌어다 놓으세요</b>
+          <span>형식 상관없이 파일당 25MB까지</span>
         </div>
         <input type="file" id="fileInput" multiple hidden>
         <p class="picked" id="picked" hidden></p>
-        <div class="or">或者贴链接</div>
-        <label>链接（更大的文件放网盘后贴这里）
+        <div class="or">또는 링크 붙이기</div>
+        <label>링크 (큰 파일은 클라우드에 올리고 여기에 붙여 주세요)
           <input type="url" id="linkInput" placeholder="https://...">
         </label>
-        <label>备注（可选）
-          <textarea id="noteInput" maxlength="500" placeholder="今天做了什么，比如：给 tail1–tail5 加了甩尾"></textarea>
+        <label>메모 (선택)
+          <textarea id="noteInput" maxlength="500" placeholder="오늘 한 일, 예: tail1–tail5에 꼬리 흔들기 추가"></textarea>
         </label>
-        <button class="btn primary" id="submitBtn" type="button">上传</button>
+        <button class="btn primary" id="submitBtn" type="button">올리기</button>
         <p class="status" id="status" role="status"></p>
       </div>
     </aside>
