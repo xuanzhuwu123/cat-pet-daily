@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F27A1A">
+<meta name="description" content="모니터 속에 갇힌 작은 치즈 고양이가 30일 동안 바탕화면을 빠져나가려 해요. 매일 하나씩 공개되는 탈출 이야기.">
 <title>데스크톱 펫의 탈출</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,11 +20,11 @@
 <div class="scrollbar" aria-hidden="true"><i id="scrollBar"></i></div>
 
 <nav class="topnav" id="topnav">
-  <a class="brand" href="#top"><span class="brand-dot" aria-hidden="true"></span>치즈냥</a>
+  <a class="brand" href="#top"><span class="brand-dot" aria-hidden="true"></span>데스크톱 펫의 탈출</a>
   <div class="links">
-    <a href="#board" data-sec="board">보드</a>
-    <a href="#day" data-sec="day">기록</a>
-    <a href="#upload" class="cta" data-sec="upload">올리기</a>
+    <a href="#latest" data-sec="latest">최신화</a>
+    <a href="#episodes" data-sec="episodes">전체 에피소드</a>
+    <button type="button" class="studio-link" data-open-studio>제작자</button>
   </div>
 </nav>
 
@@ -45,18 +46,20 @@
 
   <div class="hero-inner">
     <div class="hero-text">
-      <p class="eyebrow rise" style="--d:0">3D DESKTOP PET PROJECT · 30 DAYS</p>
+      <p class="eyebrow rise" style="--d:0">A 30-DAY DESKTOP PET STORY</p>
       <h1 class="rise" style="--d:1">데스크톱 펫의<br><em>탈출</em></h1>
-      <p class="lead rise" style="--d:2">하루에 하나씩, 고양이가 조금씩 살아나는 과정을 기록해요.<br>파일이든 링크든 매일 올려 주세요.</p>
-      <p class="range rise" style="--d:3" id="range"></p>
+      <p class="lead rise" style="--d:2">모니터 속에 갇힌 작은 치즈 고양이가 <br>30일 동안 바탕화면 밖으로 나가려 해요. <br>매일 하나씩 공개되는 탈출 시도를 따라와 주세요.</p>
+      <p class="onair rise" style="--d:3" id="onair">불러오는 중…</p>
       <div class="hero-cta rise" style="--d:4">
-        <a class="btn primary big" href="#upload">오늘 올리기</a>
-        <a class="btn ghost big" href="#board">보드 보기</a>
+        <button class="btn primary big" type="button" id="ctaLatest">최신화 보기</button>
+        <button class="btn ghost big" type="button" id="ctaFirst">1화부터 보기</button>
       </div>
     </div>
 
     <div class="hero-art rise" style="--d:2" aria-hidden="true">
-      <div class="orbit"><i></i><i></i><i></i></div>
+      <div class="screen">
+        <div class="screen-bar"><i></i><i></i><i></i></div>
+      </div>
       <div class="cat" id="cat">
         <span class="ear l"></span><span class="ear r"></span>
         <div class="head">
@@ -72,66 +75,92 @@
   </div>
 
   <div class="ribbons rise" style="--d:5" aria-hidden="true">
-    <div class="ribbon r1"><div class="track"><div class="grp"><span>치즈냥</span><svg class="pw"><use href="#paw"/></svg><span>CHEESE NYANG</span><svg class="pw"><use href="#paw"/></svg><span>3D DESKTOP PET</span><svg class="pw"><use href="#paw"/></svg><span>매일 조금씩</span><svg class="pw"><use href="#paw"/></svg><span>MEOW</span><svg class="pw"><use href="#paw"/></svg><span>말랑말랑</span><svg class="pw"><use href="#paw"/></svg></div><div class="grp"><span>치즈냥</span><svg class="pw"><use href="#paw"/></svg><span>CHEESE NYANG</span><svg class="pw"><use href="#paw"/></svg><span>3D DESKTOP PET</span><svg class="pw"><use href="#paw"/></svg><span>매일 조금씩</span><svg class="pw"><use href="#paw"/></svg><span>MEOW</span><svg class="pw"><use href="#paw"/></svg><span>말랑말랑</span><svg class="pw"><use href="#paw"/></svg></div></div></div>
-    <div class="ribbon r2"><div class="track"><div class="grp"><span>DAILY LOG</span><i>✦</i><span>오늘의 고양이</span><i>✦</i><span>MADE WITH LOVE</span><i>✦</i><span>꼬리 흔들흔들</span><i>✦</i><span>PURR</span><i>✦</i><span>귀 쫑긋</span><i>✦</i></div><div class="grp"><span>DAILY LOG</span><i>✦</i><span>오늘의 고양이</span><i>✦</i><span>MADE WITH LOVE</span><i>✦</i><span>꼬리 흔들흔들</span><i>✦</i><span>PURR</span><i>✦</i><span>귀 쫑긋</span><i>✦</i></div></div></div>
+    <div class="ribbon r1"><div class="track"><div class="grp"><span>데스크톱 펫의 탈출</span><svg class="pw"><use href="#paw"/></svg><span>ESCAPE THE DESKTOP</span><svg class="pw"><use href="#paw"/></svg><span>30일 30번의 시도</span><svg class="pw"><use href="#paw"/></svg><span>ONE IDEA A DAY</span><svg class="pw"><use href="#paw"/></svg><span>창문 너머로</span><svg class="pw"><use href="#paw"/></svg></div><div class="grp"><span>데스크톱 펫의 탈출</span><svg class="pw"><use href="#paw"/></svg><span>ESCAPE THE DESKTOP</span><svg class="pw"><use href="#paw"/></svg><span>30일 30번의 시도</span><svg class="pw"><use href="#paw"/></svg><span>ONE IDEA A DAY</span><svg class="pw"><use href="#paw"/></svg><span>창문 너머로</span><svg class="pw"><use href="#paw"/></svg></div></div></div>
+    <div class="ribbon r2"><div class="track"><div class="grp"><span>NEW EPISODE</span><i>✦</i><span>오늘은 어디까지 갔을까</span><i>✦</i><span>MEOW</span><i>✦</i><span>작업표시줄을 넘어서</span><i>✦</i><span>TO BE CONTINUED</span><i>✦</i></div><div class="grp"><span>NEW EPISODE</span><i>✦</i><span>오늘은 어디까지 갔을까</span><i>✦</i><span>MEOW</span><i>✦</i><span>작업표시줄을 넘어서</span><i>✦</i><span>TO BE CONTINUED</span><i>✦</i></div></div></div>
   </div>
 
-  <a class="scroll-cue" href="#board" aria-label="아래로"><span></span></a>
+  <a class="scroll-cue" href="#latest" aria-label="아래로"><span></span></a>
 </section>
 
 <main>
   <p class="notice" id="notice" hidden></p>
 
-  <section class="section" id="board">
+  <section class="section" id="latest">
     <header class="sec-head reveal">
-      <p class="kicker"><span>01</span> Board</p>
-      <h2>30일 업로드 보드</h2>
-      <div class="legend">
-        <span><i class="lg l1"></i>1개</span>
-        <span><i class="lg l2"></i>2개</span>
-        <span><i class="lg l3"></i>3개 이상</span>
-        <span class="tip">칸을 누르면 그날 기록으로 이동해요</span>
-      </div>
+      <p class="kicker"><span>NOW</span> Latest episode</p>
+      <h2>가장 최근의 탈출 시도</h2>
     </header>
-    <div class="tiles reveal" id="grid"></div>
+    <div class="feature reveal" id="feature"></div>
   </section>
 
-  <section class="section" id="day">
+  <section class="section" id="episodes">
     <header class="sec-head reveal">
-      <p class="kicker"><span>02</span> Daily log</p>
-      <h2>그날의 기록</h2>
+      <p class="kicker"><span>ALL</span> Episodes</p>
+      <h2>30일의 탈출 일지</h2>
+      <div class="filters" role="group" aria-label="보기">
+        <button type="button" class="chip on" data-filter="all" id="fAll">전체</button>
+        <button type="button" class="chip" data-filter="open" id="fOpen">공개된 화</button>
+      </div>
     </header>
-    <div class="day">
-      <div class="day-main reveal" id="dayMain"></div>
-
-      <aside class="side reveal" id="upload">
-        <div class="panel" id="uploader">
-          <h2 id="upTitle">오늘 올리기</h2>
-          <div class="drop" id="drop" tabindex="0" role="button">
-            <span class="drop-icon" aria-hidden="true"></span>
-            <b>여기를 눌러 파일을 고르거나 끌어다 놓으세요</b>
-            <span>형식 상관없이 파일당 25MB까지</span>
-          </div>
-          <input type="file" id="fileInput" multiple hidden>
-          <p class="picked" id="picked" hidden></p>
-          <div class="or">또는 링크 붙이기</div>
-          <label>링크 (큰 파일은 클라우드에 올리고 여기에 붙여 주세요)
-            <input type="url" id="linkInput" placeholder="https://...">
-          </label>
-          <label>메모 (선택)
-            <textarea id="noteInput" maxlength="500" placeholder="오늘 한 일, 예: tail1–tail5에 꼬리 흔들기 추가"></textarea>
-          </label>
-          <button class="btn primary" id="submitBtn" type="button"><span>올리기</span></button>
-          <p class="status" id="status" role="status"></p>
-        </div>
-      </aside>
-    </div>
+    <div class="eps reveal" id="eps"></div>
   </section>
 </main>
 
 <footer class="foot">
-  <p>데스크톱 펫의 탈출 · 3D DESKTOP PET PROJECT · 매일 조금씩</p>
-  <a href="#top">맨 위로 ↑</a>
+  <p>데스크톱 펫의 탈출 · 3D DESKTOP PET PROJECT</p>
+  <div class="foot-links">
+    <button type="button" class="linkish" data-open-studio>제작자 업로드</button>
+    <a href="#top">맨 위로 ↑</a>
+  </div>
 </footer>
+
+<!-- 에피소드 보기 -->
+<dialog class="sheet viewer" id="viewer" aria-labelledby="vTitle">
+  <div class="sheet-head">
+    <div class="v-title">
+      <span class="v-no" id="vNo"></span>
+      <h2 id="vTitle"></h2>
+    </div>
+    <div class="v-nav">
+      <button class="btn round" type="button" id="vPrev" aria-label="이전 화">←</button>
+      <button class="btn round" type="button" id="vNext" aria-label="다음 화">→</button>
+      <button class="btn round" type="button" data-close aria-label="닫기">✕</button>
+    </div>
+  </div>
+  <div class="sheet-body" id="vBody"></div>
+</dialog>
+
+<!-- 제작자 업로드 -->
+<dialog class="sheet studio" id="studio" aria-labelledby="sTitle">
+  <div class="sheet-head">
+    <div>
+      <p class="s-kicker">제작자 전용</p>
+      <h2 id="sTitle">에피소드 올리기</h2>
+    </div>
+    <button class="btn round" type="button" data-close aria-label="닫기">✕</button>
+  </div>
+  <div class="sheet-body panel" id="uploader">
+    <label>몇 화에 올릴까요?
+      <select id="daySelect"></select>
+    </label>
+    <div class="drop" id="drop" tabindex="0" role="button">
+      <span class="drop-icon" aria-hidden="true"></span>
+      <b>여기를 눌러 파일을 고르거나 끌어다 놓으세요</b>
+      <span>이미지·영상 권장 · 파일당 25MB까지</span>
+    </div>
+    <input type="file" id="fileInput" multiple hidden>
+    <p class="picked" id="picked" hidden></p>
+    <div class="or">또는 링크 붙이기</div>
+    <label>링크 (큰 영상은 유튜브·클라우드에 올리고 붙여 주세요)
+      <input type="url" id="linkInput" placeholder="https://...">
+    </label>
+    <label>관객에게 보여줄 설명 (선택)
+      <textarea id="noteInput" maxlength="500" placeholder="예: 고양이가 작업표시줄을 사다리 삼아 올라가 봤어요."></textarea>
+    </label>
+    <button class="btn primary" id="submitBtn" type="button"><span>올리기</span></button>
+    <p class="status" id="status" role="status"></p>
+    <p class="hint">이 기기에서 올린 항목은 에피소드 보기 화면에서 삭제할 수 있어요.</p>
+  </div>
+</dialog>
 </body>
 </html>

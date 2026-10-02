@@ -28,9 +28,9 @@ const io = new IntersectionObserver(entries => {
     if (!e.isIntersecting) continue;
     e.target.classList.add("in");
     io.unobserve(e.target);
-    if (e.target.classList.contains("tiles")) setTimeout(() => e.target.classList.add("settled"), 1600);
+    if (e.target.classList.contains("eps")) setTimeout(() => e.target.classList.add("settled"), 1600);
   }
-}, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+}, { threshold: 0, rootMargin: "0px 0px -8% 0px" });
 document.querySelectorAll(".reveal").forEach(el => io.observe(el));
 
 // 导航高亮当前区块
@@ -39,11 +39,10 @@ const spy = new IntersectionObserver(entries => {
   for (const e of entries) {
     if (!e.isIntersecting) continue;
     links.forEach(a => a.classList.remove("active"));
-    const id = e.target.id === "upload" && innerWidth > 860 ? "day" : e.target.id;
-    links.get(id)?.classList.add("active");
+    links.get(e.target.id)?.classList.add("active");
   }
 }, { rootMargin: "-45% 0px -50% 0px" });
-["top", "board", "day", "upload"].forEach(id => { const el = document.getElementById(id); if (el) spy.observe(el); });
+["top", "latest", "episodes"].forEach(id => { const el = document.getElementById(id); if (el) spy.observe(el); });
 
 // 猫眼跟着鼠标
 const pupils = [...document.querySelectorAll(".eye i")];

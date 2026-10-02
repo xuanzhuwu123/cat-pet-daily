@@ -5,7 +5,7 @@ const THUMB_PX = 480;
 const WEEK = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
-const S = { config: null, entries: [], sel: null, mine: new Set(), busy: false, error: "" };
+const S = { config: null, entries: [], view: null, filter: "all", mine: new Set(), busy: false, error: "" };
 const $ = id => document.getElementById(id);
 
 // ---------- 本机上传过的记录（只能删除自己在这台设备上传的） ----------
@@ -30,7 +30,10 @@ const DAYS = () => (S.config && S.config.days) || 30;
 const start = () => (S.config && S.config.startDate) || today();
 const dayList = () => Array.from({ length: DAYS() }, (_, i) => addDays(start(), i));
 const dayNo = s => diff(s, start()) + 1;
-const md = s => { const d = parse(s); return `${d.getMonth() + 1}/${d.getDate()}`; };
+const dayOf = no => addDays(start(), no - 1);
+const md = s => { const d = parse(s); return `${d.getMonth() + 1}월 ${d.getDate()}일`; };
+const longDate = s => `${md(s)} ${WEEK[parse(s).getDay()]}`;
+const epLabel = no => `EP.${pad(no)}`;
 
 // ---------- DOM 小工具（用户内容一律走 textContent） ----------
 function h(tag, props, ...kids) {
@@ -52,22 +55,17 @@ function fileUrl(path, time) {
   return fresh ? RAW_BASE + encodePath(path) : encodePath(path);
 }
 const encodePath = p => p.split("/").map(encodeURIComponent).join("/");
-function withFallback(img, path) {
-  img.addEventListener("error", () => {
-    if (!img.dataset.retried) { img.dataset.retried = "1"; img.src = RAW_BASE + encodePath(path); }
+function withFallback(el, path) {
+  el.addEventListener("error", () => {
+    if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = RAW_BASE + encodePath(path); }
   });
-  return img;
+  return el;
 }
 
 function applyManifest(m) {
   if (!m || !m.config) return;
   S.config = m.config;
   S.entries = Array.isArray(m.entries) ? m.entries : [];
-  const no = S.sel ? dayNo(S.sel) : 0;
-  if (no < 1 || no > DAYS()) {
-    const t = today(), tn = dayNo(t);
-    S.sel = tn < 1 ? start() : tn > DAYS() ? addDays(start(), DAYS() - 1) : t;
-  }
   render();
 }
 
@@ -82,123 +80,241 @@ async function loadManifest() {
     if (r.ok) { applyManifest(await r.json()); S.error = ""; }
     else throw new Error();
   } catch {
-    if (!S.config) S.error = "데이터를 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.";
-    else S.error = S.error || "";
+    if (!S.config) S.error = "이야기를 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.";
   }
   render();
+  openFromHash();
+}
+
+// ---------- 数据整理 ----------
+// 观众先看到作品：视频 > 图片 > 其他，同类按上传时间
+const rank = e => (e.type || "").startsWith("video/") ? 0 : (e.type || "").startsWith("image/") ? 1 : 2;
+const byTime = (a, b) => rank(a) - rank(b) || ((a.time || "") < (b.time || "") ? -1 : 1);
+const itemsOf = d => S.entries.filter(e => e.day === d).sort(byTime);
+const coverOf = list => list[0];
+const captionOf = list => (list.find(e => e.note) || {}).note || "";
+const openDays = () => dayList().filter(d => d <= today() && S.entries.some(e => e.day === d));
+const latestDay = () => openDays().pop() || null;
+
+const sizeText = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+const isImg = e => e.kind !== "link" && (e.type || "").startsWith("image/");
+const isVid = e => e.kind !== "link" && (e.type || "").startsWith("video/");
+const extOf = e => e.kind === "link" ? "LINK" : ((e.name || "").split(".").pop() || "FILE").toUpperCase().slice(0, 5);
+const hrefOf = e => e.kind === "link" ? e.url : fileUrl(e.path, e.time);
+
+// 卡片用的小封面：图片用缩略图；视频只读开头一帧当封面
+function smallCover(e) {
+  if (e && isVid(e))
+    return h("span", { class: "cv-vid" },
+      withFallback(h("video", { src: hrefOf(e) + "#t=0.1", muted: true, playsinline: true, preload: "metadata", tabindex: "-1" }), e.path),
+      h("span", { class: "cv-play" }, h("b", {}, "▶")));
+  if (e && e.kind !== "link" && e.thumb)
+    return withFallback(h("img", { src: fileUrl(e.thumb, e.time), alt: "", loading: "lazy", decoding: "async" }), e.thumb);
+  if (e && isImg(e) && (e.size || 0) < 400 * 1024)
+    return withFallback(h("img", { src: hrefOf(e), alt: "", loading: "lazy", decoding: "async" }), e.path);
+  return h("span", { class: "cv-ext" }, e ? extOf(e) : "");
+}
+
+// 大图：原图，加载完之前先显示缩略图
+function bigImage(e) {
+  const img = withFallback(h("img", { src: hrefOf(e), alt: e.note || e.name || "", decoding: "async", loading: "lazy" }), e.path);
+  if (e.thumb) img.style.backgroundImage = `url("${fileUrl(e.thumb, e.time)}")`;
+  return img;
+}
+function bigVideo(e) {
+  return withFallback(h("video", { src: hrefOf(e), controls: true, playsinline: true, preload: "metadata" }), e.path);
+}
+function media(e) {
+  if (isImg(e)) return h("a", { class: "media", href: hrefOf(e), target: "_blank", rel: "noopener" }, bigImage(e));
+  if (isVid(e)) return h("div", { class: "media" }, bigVideo(e));
+  const isLink = e.kind === "link";
+  return h("a", { class: "media file-link", href: hrefOf(e), target: "_blank", rel: "noopener" },
+    h("span", { class: "cv-ext" }, extOf(e)),
+    h("span", { class: "fl-name" }, e.name || (isLink ? e.url : "파일")),
+    h("span", { class: "fl-go" }, isLink ? "링크 열기 ↗" : `열기 · ${sizeText(e.size || 0)}`));
 }
 
 // ---------- 渲染 ----------
-function counts() {
-  const m = new Map();
-  for (const e of S.entries) m.set(e.day, (m.get(e.day) || 0) + 1);
-  return m;
-}
-const sizeText = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
-const timeText = iso => { if (!iso) return ""; const d = new Date(iso); return `${md(fmt(d))} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
-
 function render() {
   const t = today();
-  const days = dayList();
-  const c = counts();
-
   if (S.config && S.config.title) document.title = S.config.title;
-  $("range").textContent = S.config ? `${start()} → ${days[days.length - 1]}` : "불러오는 중…";
 
   const notice = $("notice");
   notice.hidden = !S.error;
   notice.textContent = S.error;
 
-  // 30 天格子
-  $("grid").replaceChildren(...days.map((d, i) => {
-    const n = c.get(d) || 0;
-    let cls = "tile";
-    if (d > t) cls += " future";
-    else if (!n) cls += " none";
-    else cls += n >= 3 ? " l3" : n === 2 ? " l2" : " l1";
-    if (d === t) cls += " today";
-    if (d === S.sel) cls += " sel";
-    return h("button", { class: cls, style: `--i:${i}`, type: "button", disabled: d > t,
-      title: `${d} ${WEEK[parse(d).getDay()]} · ${n}개`, "aria-label": `Day ${dayNo(d)}, ${d}, ${n}개`,
-      onclick: () => { select(d); document.getElementById("day").scrollIntoView({ behavior: "smooth" }); } },
-      h("span", { class: "no" }, dayNo(d)),
-      n ? h("span", { class: "cnt" }, n) : null,
-      h("span", { class: "dt" }, md(d)));
-  }));
-
-  renderDay(t);
-  renderSide(t);
+  renderOnAir(t);
+  renderFeature();
+  renderEpisodes(t);
+  renderStudioDays(t);
+  if ($("viewer").open) renderViewer();
 }
 
-let daySig = "";
-function renderDay(t) {
-  const main = $("dayMain");
-  if (!S.sel) { main.replaceChildren(); return; }
-  const sel = S.sel, no = dayNo(sel), d = parse(sel);
-  const list = S.entries.filter(e => e.day === sel).sort((a, b) => (a.time || "") < (b.time || "") ? -1 : 1);
-  // 内容没变就不重画，避免卡片动画反复播放
-  const sig = [sel, t, list.map(e => e.id + (S.mine.has(e.id) ? "*" : "")).join(",")].join("|");
-  if (sig === daySig) return;
-  const swapped = !daySig.startsWith(sel + "|");
-  daySig = sig;
-  const kids = [h("div", { class: "day-title" + (swapped ? " swap" : "") },
-    h("span", { class: "n" }, `Day ${no}`),
-    h("h2", {}, `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEK[d.getDay()]}`),
-    h("span", { class: "d" + (sel === t ? " now" : "") }, sel === t ? "오늘" : sel > t ? "아직 전" : `${diff(t, sel)}일 전`),
-    h("div", { class: "nav" },
-      h("button", { class: "btn", disabled: no <= 1, onclick: () => select(addDays(sel, -1)) }, "← 이전 날"),
-      h("button", { class: "btn", disabled: no >= DAYS(), onclick: () => select(addDays(sel, 1)) }, "다음 날 →")))];
-  if (!list.length) kids.push(h("p", { class: "empty" }, sel > t ? "아직 오지 않은 날이에요." : "이 날은 아직 아무것도 올라오지 않았어요."));
-  else kids.push(h("div", { class: "files" }, list.map((e, i) => { const el = fileCard(e); el.style.setProperty("--i", i); return el; })));
-  main.replaceChildren(...kids);
+function renderOnAir(t) {
+  const el = $("onair");
+  if (!S.config) { el.textContent = "불러오는 중…"; return; }
+  const no = dayNo(t), n = openDays().length;
+  el.replaceChildren();
+  if (no < 1) el.append(h("b", {}, `D-${1 - no}`), ` ${md(start())}에 1화가 시작돼요`);
+  else if (no > DAYS()) el.append(h("b", {}, "완결"), ` 전체 ${n}화 공개`);
+  else el.append(h("i", { class: "live" }), h("b", {}, `${no}일째 탈출 중`), ` · 지금까지 ${n}화 공개`);
 }
 
-function fileCard(e) {
-  const isLink = e.kind === "link";
-  const href = isLink ? e.url : fileUrl(e.path, e.time);
-  const type = e.type || "";
-  let thumb;
-  if (!isLink && e.thumb) {
-    thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" },
-      withFallback(h("img", { src: fileUrl(e.thumb, e.time), alt: e.name, loading: "lazy", decoding: "async" }), e.thumb));
-  } else if (!isLink && type.startsWith("image/") && (e.size || 0) < 400 * 1024) {
-    thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" },
-      withFallback(h("img", { src: href, alt: e.name, loading: "lazy", decoding: "async" }), e.path));
-  } else if (!isLink && type.startsWith("video/")) {
-    // 视频只在点击后才加载
-    thumb = h("button", { class: "thumb", type: "button", onclick: ev => {
-      const v = h("video", { src: href, controls: true, autoplay: true, playsinline: true });
-      v.addEventListener("error", () => { if (!v.dataset.retried) { v.dataset.retried = "1"; v.src = RAW_BASE + encodePath(e.path); } }, { once: true });
-      ev.currentTarget.replaceChildren(v);
-      ev.currentTarget.onclick = null;
-    } }, h("span", { class: "play" }, h("b", {}, "▶"), `재생 · ${sizeText(e.size || 0)}`));
-  } else {
-    const ext = isLink ? "LINK" : (e.name.split(".").pop() || "FILE").toUpperCase().slice(0, 5);
-    thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" }, h("span", { class: "ext" }, ext));
+let featSig = "";
+function renderFeature() {
+  const box = $("feature");
+  const d = latestDay();
+  const list = d ? itemsOf(d) : [];
+  const sig = d + "|" + list.map(e => e.id).join(",");
+  if (sig === featSig) return;
+  featSig = sig;
+  if (!d) {
+    box.replaceChildren(h("div", { class: "feature-empty" },
+      h("div", { class: "fe-cat", "aria-hidden": "true" }),
+      h("h3", {}, "첫 번째 탈출 시도를 준비하고 있어요"),
+      h("p", {}, "고양이가 아직 모니터 안에서 기지개를 켜는 중이에요. 곧 1화가 공개돼요.")));
+    return;
   }
-  const del = S.mine.has(e.id) ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제") : null;
-  return h("div", { class: "file" }, thumb,
-    h("div", { class: "meta" },
-      h("a", { href, target: "_blank", rel: "noopener" }, e.name || "이름 없음"),
+  const no = dayNo(d), cover = coverOf(list), cap = captionOf(list);
+  let visual;
+  if (isImg(cover)) visual = bigImage(cover);
+  else if (isVid(cover)) {
+    // 最新一话静音循环自动播放，点控制条可开声音
+    visual = bigVideo(cover);
+    Object.assign(visual, { muted: true, autoplay: true, loop: true });
+    visual.setAttribute("muted", "");
+  }
+  else visual = smallCover(cover);
+  box.replaceChildren(
+    h("div", { class: "feature-media" + (isImg(cover) || isVid(cover) ? "" : " plain") }, visual),
+    h("div", { class: "feature-text" },
+      h("p", { class: "ft-ep" }, h("span", {}, epLabel(no)), d === today() ? h("em", {}, "NEW") : null),
+      h("h3", {}, longDate(d)),
+      cap ? h("p", { class: "ft-cap" }, cap) : h("p", { class: "ft-cap muted" }, "오늘의 탈출 기록을 확인해 보세요."),
+      h("div", { class: "ft-actions" },
+        h("button", { class: "btn primary big", type: "button", onclick: () => openViewer(d) },
+          list.length > 1 ? `${list.length}개 모두 보기` : "자세히 보기"),
+        no > 1 ? h("button", { class: "btn ghost big", type: "button", onclick: () => openViewer(prevOpen(d) || dayOf(1)) }, "지난 화") : null)));
+}
+
+function renderEpisodes(t) {
+  const days = dayList();
+  const nOpen = openDays().length;
+  $("fAll").textContent = `전체 ${days.length}화`;
+  $("fOpen").textContent = `공개된 화 ${nOpen}`;
+  const shown = S.filter === "open" ? days.filter(d => d <= t && S.entries.some(e => e.day === d)) : days;
+  if (!shown.length) {
+    $("eps").replaceChildren(h("p", { class: "empty" }, "아직 공개된 에피소드가 없어요. 조금만 기다려 주세요!"));
+    return;
+  }
+  $("eps").replaceChildren(...shown.map((d, i) => epCard(d, t, i)));
+}
+
+function epCard(d, t, i) {
+  const no = dayNo(d), list = d <= t ? itemsOf(d) : [];
+  const style = `--i:${i}`;
+  if (d > t) {
+    return h("div", { class: "ep locked", style },
+      h("div", { class: "cover" }, h("span", { class: "cv-lock" }, `D-${diff(d, t)}`)),
+      h("div", { class: "info" }, h("p", { class: "ep-no" }, epLabel(no), h("span", {}, md(d))), h("p", { class: "ep-cap" }, "공개 예정")));
+  }
+  if (!list.length) {
+    const isToday = d === t;
+    return h("div", { class: "ep " + (isToday ? "soon" : "quiet"), style },
+      h("div", { class: "cover" }, isToday
+        ? h("span", { class: "cv-soon" }, h("i", { class: "live" }), "오늘 공개 예정")
+        : pawSvg()),
+      h("div", { class: "info" }, h("p", { class: "ep-no" }, epLabel(no), h("span", {}, md(d))),
+        h("p", { class: "ep-cap" }, isToday ? "곧 올라와요" : "쉬어 가는 날")));
+  }
+  const cover = coverOf(list), cap = captionOf(list);
+  const card = h("button", { class: "ep open" + (d === t ? " new" : ""), style, type: "button",
+      "aria-label": `${epLabel(no)} ${longDate(d)} 보기`, onclick: () => openViewer(d) },
+    h("div", { class: "cover" }, smallCover(cover),
+      list.length > 1 ? h("span", { class: "cv-count" }, `+${list.length - 1}`) : null,
+      d === t ? h("span", { class: "cv-new" }, "NEW") : null),
+    h("div", { class: "info" }, h("p", { class: "ep-no" }, epLabel(no), h("span", {}, md(d))),
+      h("p", { class: "ep-cap" }, cap || "기록 보기")));
+  return card;
+}
+// 空的过去日子里放一个猫爪
+function pawSvg() {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg"), use = document.createElementNS(NS, "use");
+  svg.setAttribute("class", "cv-paw"); svg.setAttribute("aria-hidden", "true");
+  use.setAttribute("href", "#paw");
+  svg.append(use);
+  return svg;
+}
+
+// ---------- 观看弹窗 ----------
+const prevOpen = d => openDays().filter(x => x < d).pop();
+const nextOpen = d => openDays().find(x => x > d);
+
+function openViewer(d) {
+  S.view = d;
+  vSig = "";
+  renderViewer();
+  const v = $("viewer");
+  if (!v.open) v.showModal();
+  $("vBody").scrollTop = 0;
+  const hash = `#ep-${dayNo(d)}`;
+  if (location.hash !== hash) history.replaceState(null, "", hash);
+}
+
+let vSig = "";
+function renderViewer() {
+  const d = S.view;
+  if (!d) return;
+  const t = today(), no = dayNo(d), list = d <= t ? itemsOf(d) : [];
+  const sig = [d, list.map(e => e.id + (S.mine.has(e.id) ? "*" : "")).join(",")].join("|");
+  $("vPrev").disabled = !prevOpen(d);
+  $("vNext").disabled = !nextOpen(d);
+  if (sig === vSig) return;
+  vSig = sig;
+  $("vNo").textContent = epLabel(no);
+  $("vTitle").textContent = longDate(d);
+  const body = $("vBody");
+  if (!list.length) {
+    body.replaceChildren(h("p", { class: "empty" }, d > t ? "아직 공개되지 않은 에피소드예요." : "이 날은 기록이 없어요."));
+    return;
+  }
+  body.replaceChildren(...list.map((e, i) => h("figure", { class: "item", style: `--i:${i}` },
+    media(e),
+    (e.note || S.mine.has(e.id)) ? h("figcaption", {},
       e.note ? h("p", {}, e.note) : null,
-      h("div", { class: "row" },
-        h("span", {}, timeText(e.time)),
-        e.size ? h("span", {}, sizeText(e.size)) : null,
-        del)));
+      S.mine.has(e.id) ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제") : null) : null)));
 }
 
-function renderSide(t) {
-  const no = S.sel ? dayNo(S.sel) : 0;
-  $("upTitle").textContent = S.sel === t ? "오늘 올리기" : S.sel > t ? "아직 오지 않은 날이에요" : `Day ${no}에 올리기`;
-  $("submitBtn").disabled = S.busy || !S.sel || S.sel > t;
+function closeViewer() {
+  $("viewer").querySelectorAll("video").forEach(v => v.pause());
+  S.view = null;
+  if (/^#ep-\d+$/.test(location.hash)) history.replaceState(null, "", location.pathname + location.search);
 }
 
-function select(d) {
-  const no = dayNo(d);
-  if (no < 1 || no > DAYS()) return;
-  S.sel = d;
-  render();
+function openFromHash() {
+  const m = /^#ep-(\d+)$/.exec(location.hash);
+  if (m && S.config) { const no = Number(m[1]); if (no >= 1 && no <= DAYS()) openViewer(dayOf(no)); }
+  if (location.hash === "#studio") openStudio();
 }
+
+// ---------- 制作者上传 ----------
+function renderStudioDays(t) {
+  const sel = $("daySelect");
+  const days = dayList().filter(d => d <= t);
+  const keep = sel.value;
+  const sig = days.join(",");
+  if (sel.dataset.sig !== sig) {
+    sel.dataset.sig = sig;
+    sel.replaceChildren(...days.slice().reverse().map(d =>
+      h("option", { value: d }, `${epLabel(dayNo(d))} · ${longDate(d)}${d === t ? " (오늘)" : ""}`)));
+    if (keep && days.includes(keep)) sel.value = keep;
+  }
+  sel.disabled = !days.length;
+  $("submitBtn").disabled = S.busy || !days.length;
+  if (!days.length && S.config) setStatus(`${md(start())}부터 올릴 수 있어요.`);
+}
+function openStudio() { const s = $("studio"); if (!s.open) s.showModal(); }
 
 // ---------- 和 Worker 通信 ----------
 async function api(path, body) {
@@ -251,6 +367,8 @@ async function submit() {
   const files = [...$("fileInput").files];
   const link = $("linkInput").value.trim();
   const note = $("noteInput").value.trim().slice(0, 500);
+  const day = $("daySelect").value;
+  if (!day) return setStatus("올릴 화를 골라 주세요.", "err");
   if (!files.length && !link) return setStatus("파일을 고르거나 링크를 입력해 주세요.", "err");
   if (link && !/^https?:\/\/\S+$/i.test(link)) return setStatus("링크는 http:// 또는 https:// 로 시작해야 해요.", "err");
   const big = files.find(f => f.size > MAX_BYTES);
@@ -259,7 +377,6 @@ async function submit() {
   if (empty) return setStatus(`${empty.name}: 빈 파일이에요.`, "err");
 
   S.busy = true; render();
-  const day = S.sel;
   let ok = 0;
   try {
     for (const f of files) {
@@ -283,7 +400,7 @@ async function submit() {
     }
     $("fileInput").value = ""; $("linkInput").value = ""; $("noteInput").value = "";
     $("picked").hidden = true;
-    setStatus(`Day ${dayNo(day)}에 ${ok}개를 올렸어요.`, "ok");
+    setStatus(`${epLabel(dayNo(day))}에 ${ok}개를 올렸어요.`, "ok");
   } catch (e) {
     setStatus((ok ? `${ok}개는 올렸지만 나머지는 실패했어요: ` : "") + errText(e), "err");
   } finally {
@@ -325,7 +442,37 @@ drop.addEventListener("drop", e => {
 });
 fileInput.addEventListener("change", showPicked);
 $("submitBtn").addEventListener("click", submit);
-// 回到页面时刷新一次，看到别人新传的
+
+document.querySelectorAll("[data-open-studio]").forEach(b => b.addEventListener("click", openStudio));
+document.querySelectorAll("dialog").forEach(dlg => {
+  dlg.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => dlg.close()));
+  // 点遮罩关闭
+  dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
+});
+$("viewer").addEventListener("close", closeViewer);
+$("vPrev").addEventListener("click", () => { const d = prevOpen(S.view); if (d) openViewer(d); });
+$("vNext").addEventListener("click", () => { const d = nextOpen(S.view); if (d) openViewer(d); });
+$("viewer").addEventListener("keydown", e => {
+  if (e.target.closest("video")) return;
+  if (e.key === "ArrowLeft") $("vPrev").click();
+  if (e.key === "ArrowRight") $("vNext").click();
+});
+
+$("ctaLatest").addEventListener("click", () => {
+  const d = latestDay();
+  if (d) openViewer(d); else $("latest").scrollIntoView({ behavior: "smooth" });
+});
+$("ctaFirst").addEventListener("click", () => {
+  const d = openDays()[0];
+  if (d) openViewer(d); else $("episodes").scrollIntoView({ behavior: "smooth" });
+});
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  S.filter = c.dataset.filter;
+  document.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", x === c));
+  renderEpisodes(today());
+}));
+addEventListener("hashchange", openFromHash);
+// 回到页面时刷新一次，看到新公开的内容
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !S.busy) loadManifest(); });
 
 loadMine();
