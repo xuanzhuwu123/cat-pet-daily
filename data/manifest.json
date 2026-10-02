@@ -4,5 +4,17 @@
   "startDate": "2026-09-28",
   "days": 30
  },
- "entries": []
+ "entries": [
+  {
+   "id": "muqptp23qmua",
+   "day": "2026-09-28",
+   "note": "",
+   "time": "2026-10-02T08:42:56.667Z",
+   "kind": "file",
+   "name": "1镜头.mp4",
+   "type": "video/mp4",
+   "size": 1739845,
+   "path": "daily/2026-09-28/muqptp23qmua.mp4"
+  }
+ ]
 }
