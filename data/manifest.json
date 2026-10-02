@@ -48,6 +48,17 @@
    "type": "video/mp4",
    "size": 2145101,
    "path": "daily/2026-10-01/muqpukywa13c.mp4"
+  },
+  {
+   "id": "muqpv128n22l",
+   "day": "2026-10-02",
+   "note": "",
+   "time": "2026-10-02T08:43:58.880Z",
+   "kind": "file",
+   "name": "5镜头.mp4",
+   "type": "video/mp4",
+   "size": 1694717,
+   "path": "daily/2026-10-02/muqpv128n22l.mp4"
   }
  ]
 }
