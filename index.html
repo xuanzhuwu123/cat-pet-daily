@@ -29,19 +29,14 @@
 </nav>
 
 <section class="hero" id="top">
-  <div class="blobs" aria-hidden="true">
-    <span class="blob b1" data-depth="0.25"></span>
-    <span class="blob b2" data-depth="0.4"></span>
-    <span class="blob b3" data-depth="0.15"></span>
-  </div>
-
-  <div class="paws" aria-hidden="true">
-    <svg class="paw" style="--i:0;--x:4%;--y:88%;--r:62deg"><use href="#paw"/></svg>
-    <svg class="paw" style="--i:1;--x:10%;--y:78%;--r:48deg"><use href="#paw"/></svg>
-    <svg class="paw" style="--i:2;--x:15%;--y:86%;--r:58deg"><use href="#paw"/></svg>
-    <svg class="paw" style="--i:3;--x:21%;--y:74%;--r:44deg"><use href="#paw"/></svg>
-    <svg class="paw" style="--i:4;--x:27%;--y:81%;--r:52deg"><use href="#paw"/></svg>
-    <svg class="paw" style="--i:5;--x:33%;--y:69%;--r:40deg"><use href="#paw"/></svg>
+  <!-- 背景图：缓慢推镜 + 鼠标/滚动视差 + 光斑呼吸 + 金色光点 -->
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-photo" id="heroPhoto"><img src="assets/hero.jpg" alt="" fetchpriority="high" decoding="async"></div>
+    <span class="glow g1"></span>
+    <span class="glow g2"></span>
+    <span class="glow g3"></span>
+    <div class="sparks" id="sparks"></div>
+    <div class="hero-scrim"></div>
   </div>
 
   <div class="hero-inner">
@@ -54,23 +49,6 @@
         <button class="btn primary big" type="button" id="ctaLatest">최신화 보기</button>
         <button class="btn ghost big" type="button" id="ctaFirst">1화부터 보기</button>
       </div>
-    </div>
-
-    <div class="hero-art rise" style="--d:2" aria-hidden="true">
-      <div class="screen">
-        <div class="screen-bar"><i></i><i></i><i></i></div>
-      </div>
-      <div class="cat" id="cat">
-        <span class="ear l"></span><span class="ear r"></span>
-        <div class="head">
-          <span class="stripe s1"></span><span class="stripe s2"></span><span class="stripe s3"></span>
-          <span class="eye l"><i></i></span><span class="eye r"><i></i></span>
-          <span class="cheek l"></span><span class="cheek r"></span>
-          <span class="nose"></span><span class="mouth"></span>
-          <span class="whisk l"></span><span class="whisk r"></span>
-        </div>
-      </div>
-      <div class="shadow"></div>
     </div>
   </div>
 
