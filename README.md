@@ -1,6 +1,6 @@
 # 橘猫组每日打卡
 
-3D 桌宠小组 30 天每日上传墙。文件保存在这个 GitHub 仓库里，网页用 GitHub Pages 发布，任何设备都能打开；上传和删除通过一个 Cloudflare Worker 完成。不需要密码，拿到网页链接的人选好名字就能上传。
+3D 桌宠小组 30 天每日上传墙。文件保存在这个 GitHub 仓库里，网页用 GitHub Pages 发布，任何设备都能打开；上传和删除通过一个 Cloudflare Worker 完成。不需要密码，也不用选名字，拿到网页链接的人打开就能上传。
 
 ```
 浏览器 ──读取──> GitHub Pages（网页 + data/manifest.json + daily/ 里的文件）
@@ -14,8 +14,8 @@
 |---|---|
 | `index.html` `style.css` `app.js` | 网页 |
 | `site-config.js` | Worker 地址、仓库名 |
-| `data/manifest.json` | 设置（开始日期、组员名单）+ 所有上传记录。网页打开时只读这个文件 |
-| `daily/<组员id>/<日期>/` | 上传的文件；图片会多一个 `.thumb.webp` 缩略图 |
+| `data/manifest.json` | 设置（标题、开始日期、天数）+ 所有上传记录。网页打开时只读这个文件 |
+| `daily/<日期>/` | 上传的文件；图片会多一个 `.thumb.webp` 缩略图 |
 | `worker/` | Cloudflare Worker 代码和配置 |
 
 ## 为什么打开快
@@ -68,12 +68,11 @@ npx wrangler deploy
 ### 4. 填好配置并推送
 
 - `site-config.js`：`WORKER_URL` 改成上一步的地址。
-- `data/manifest.json`：把 `members` 里的 “组员一” 等改成真实名字；需要的话改 `startDate`。
-  `id`（m1、m2……）不要改，文件夹用的是它。
+- `data/manifest.json`：需要的话改 `startDate`。
 
 ```bash
 git add .
-git commit -m "填写 Worker 地址和组员名单"
+git commit -m "填写 Worker 地址"
 git push
 ```
 
@@ -81,17 +80,17 @@ git push
 
 ## 组员怎么用
 
-1. 打开网页，右侧（手机在上方）选自己的名字，点“确定”。每台设备只需选一次，点“换人”可以重选。
+1. 打开网页，右侧（手机在上方）就是上传框，不用选名字。
 2. 点打卡墙上的格子选日期（默认今天），选文件或贴链接，写备注，点“上传”。
-3. 过去的日期可以补交，会标“补交”；只能删除自己的上传。
+3. 过去的日期可以补交，会标“补交”；只能删除在同一台设备、同一个浏览器上传的文件。
 
 ## 限制和注意
 
 - 单个文件最多 25 MB。更大的 `.blend`、视频请放网盘，贴链接。
-- 没有密码：任何拿到链接的人都能上传和删除，“我是谁”也是自己选的，靠大家自觉。链接不要公开发到群外。
+- 没有密码也不记名：任何拿到链接的人都能上传，靠大家自觉。链接不要公开发到群外。
 - 删除只是从最新版本里移除，文件仍留在 git 历史里。上传前确认没有隐私内容。
 - 刚上传的文件，Pages 需要约 1 分钟才更新；这段时间网页会直接从仓库读取，不影响查看。
-- 想改组员名单或开始日期：直接在 GitHub 上编辑 `data/manifest.json` 的 `config` 部分，**不要动 `entries`**。
+- 想改开始日期：直接在 GitHub 上编辑 `data/manifest.json` 的 `config` 部分，**不要动 `entries`**。
 
 ## 本地预览
 

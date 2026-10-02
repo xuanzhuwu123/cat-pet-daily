@@ -2,25 +2,7 @@
  "config": {
   "title": "치즈냥 팀 매일 인증",
   "startDate": "2026-09-28",
-  "days": 30,
-  "members": [
-   {
-    "id": "m1",
-    "name": "장건"
-   },
-   {
-    "id": "m2",
-    "name": "김이진"
-   },
-   {
-    "id": "m3",
-    "name": "오현수"
-   },
-   {
-    "id": "m4",
-    "name": "이화잉"
-   }
-  ]
+  "days": 30
  },
  "entries": []
 }
