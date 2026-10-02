@@ -4,5 +4,18 @@
   "startDate": "2026-09-28",
   "days": 30
  },
- "entries": []
+ "entries": [
+  {
+   "id": "muqgyugb2icr",
+   "day": "2026-10-02",
+   "note": "",
+   "time": "2026-10-02T04:35:00.395Z",
+   "kind": "file",
+   "name": "DRJ04106.jpg",
+   "type": "image/jpeg",
+   "size": 5540704,
+   "path": "daily/2026-10-02/muqgyugb2icr.jpg",
+   "thumb": "daily/2026-10-02/muqgyugb2icr.thumb.webp"
+  }
+ ]
 }
