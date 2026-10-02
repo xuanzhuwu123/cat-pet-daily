@@ -36,21 +36,18 @@
 
     <aside class="side">
       <form class="panel" id="loginForm" hidden>
-        <h2>登录后上传</h2>
+        <h2>选好名字就能上传</h2>
         <label>我是
-          <select id="memberSelect" required></select>
+          <select id="memberSelect"></select>
         </label>
-        <label>组里的密码
-          <input type="password" id="pwInput" autocomplete="current-password" required>
-        </label>
-        <button class="btn primary" type="submit" id="loginBtn">登录</button>
+        <button class="btn primary" type="submit" id="loginBtn">确定</button>
         <p class="status" id="loginStatus" role="status"></p>
       </form>
 
       <div class="panel" id="uploader" hidden>
         <div class="who-bar">
           <h2 id="upTitle">上传到今天</h2>
-          <button class="link-btn" id="logoutBtn" type="button">退出</button>
+          <button class="link-btn" id="logoutBtn" type="button">换人</button>
         </div>
         <p class="hint" id="whoami"></p>
         <div class="drop" id="drop" tabindex="0" role="button">

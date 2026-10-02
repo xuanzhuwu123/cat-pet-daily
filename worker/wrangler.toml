@@ -12,4 +12,3 @@ ALLOWED_ORIGINS = "https://xuanzhuwu123.github.io"
 
 # 密钥不要写在这里，用命令设置：
 #   npx wrangler secret put GITHUB_TOKEN
-#   npx wrangler secret put TEAM_PASSWORD

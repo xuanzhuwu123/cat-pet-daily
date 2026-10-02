@@ -1,5 +1,5 @@
-// Cloudflare Worker：团队密码校验 + 代替前端写入 GitHub 仓库。
-// 密钥（wrangler secret put）：GITHUB_TOKEN、TEAM_PASSWORD
+// Cloudflare Worker：代替前端写入 GitHub 仓库。不需要密码，有网页链接的人都能上传。
+// 密钥（wrangler secret put）：GITHUB_TOKEN
 // 变量（wrangler.toml [vars]）：REPO_OWNER、REPO_NAME、BRANCH、ALLOWED_ORIGINS
 
 const MANIFEST_PATH = "data/manifest.json";
@@ -21,13 +21,12 @@ export default {
         return json(manifest, 200, cors);
       }
       if (request.method === "POST") {
-        if (!(await checkPassword(request, env))) return json({ error: "wrong_password" }, 401, cors);
-        if (url.pathname === "/auth") return json({ ok: true }, 200, cors);
         if (url.pathname === "/blob") return await createBlob(request, env, cors);
         if (url.pathname === "/commit") return await commit(request, env, cors);
       }
       return json({ error: "not_found" }, 404, cors);
     } catch (e) {
+      console.error(`${request.method} ${url.pathname} → ${e.code || "server_error"}: ${e.message || e}`);
       return json({ error: e.code || "server_error", message: String(e.message || e) }, e.status || 500, cors);
     }
   },
@@ -41,7 +40,7 @@ function corsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": ok ? origin : allowed[0] || "",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,X-Team-Password",
+    "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };
@@ -59,20 +58,6 @@ function fail(status, code, message) {
   e.status = status;
   e.code = code;
   return e;
-}
-
-async function checkPassword(request, env) {
-  const given = request.headers.get("X-Team-Password") || "";
-  if (!env.TEAM_PASSWORD) return false;
-  const enc = new TextEncoder();
-  const [a, b] = await Promise.all([
-    crypto.subtle.digest("SHA-256", enc.encode(given)),
-    crypto.subtle.digest("SHA-256", enc.encode(env.TEAM_PASSWORD)),
-  ]);
-  const x = new Uint8Array(a), y = new Uint8Array(b);
-  let diff = 0;
-  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
-  return diff === 0;
 }
 
 function gh(env, path, init = {}) {

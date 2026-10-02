@@ -6,18 +6,18 @@ const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周�
 const COLORS = ["#E0741A", "#2F7ED8", "#1F9D6B", "#B04BC8", "#C9A21B", "#D2455A", "#4B8F99", "#7A6FD0"];
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
-const S = { config: null, entries: [], sel: null, me: null, pw: null, busy: false, error: "" };
+const S = { config: null, entries: [], sel: null, me: null, busy: false, error: "" };
 const $ = id => document.getElementById(id);
 
-// ---------- 本机记住的登录信息 ----------
+// ---------- 本机记住的身份 ----------
 function loadLogin() {
   try {
     const v = JSON.parse(localStorage.getItem("daily-login") || "null");
-    if (v && v.me && v.pw) { S.me = v.me; S.pw = v.pw; }
+    if (v && v.me) S.me = v.me;
   } catch {}
 }
 function saveLogin() {
-  try { S.me ? localStorage.setItem("daily-login", JSON.stringify({ me: S.me, pw: S.pw })) : localStorage.removeItem("daily-login"); } catch {}
+  try { S.me ? localStorage.setItem("daily-login", JSON.stringify({ me: S.me })) : localStorage.removeItem("daily-login"); } catch {}
 }
 
 // ---------- 日期（按本地时间） ----------
@@ -213,7 +213,7 @@ function fileCard(e) {
     thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" }, h("span", { class: "ext" }, ext));
   }
   const late = e.time && fmt(new Date(e.time)) > e.day;
-  const del = e.member === S.me && S.pw ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "删除") : null;
+  const del = e.member === S.me ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "删除") : null;
   return h("div", { class: "file" }, thumb,
     h("div", { class: "meta" },
       h("a", { href, target: "_blank", rel: "noopener" }, e.name || "未命名"),
@@ -226,7 +226,7 @@ function fileCard(e) {
 }
 
 function renderSide(t) {
-  const logged = !!(S.me && S.pw);
+  const logged = !!S.me;
   $("loginForm").hidden = logged || !S.config;
   $("uploader").hidden = !logged;
   const sel = $("memberSelect");
@@ -249,10 +249,10 @@ function select(d) {
 }
 
 // ---------- 和 Worker 通信 ----------
-async function api(path, body, isBlob) {
+async function api(path, body) {
   const r = await fetch(WORKER_URL + path, {
     method: "POST",
-    headers: { "Content-Type": isBlob ? "application/json" : "application/json", "X-Team-Password": S.pw || "" },
+    headers: { "Content-Type": "application/json" },
     body,
   });
   const data = await r.json().catch(() => ({}));
@@ -260,7 +260,6 @@ async function api(path, body, isBlob) {
   return data;
 }
 function errText(e) {
-  if (e.code === "wrong_password") return "密码不对，请重新登录。";
   if (e.code === "too_large") return "文件超过 25 MB，请压缩或改用链接。";
   if (e.code === "busy") return "同时上传的人太多，请再点一次。";
   if (e.code === "not_found") return "这条记录已经被删掉了。";
@@ -313,9 +312,9 @@ async function submit() {
   try {
     for (const f of files) {
       setStatus(`正在上传 ${f.name}（${ok + 1}/${files.length}）……`);
-      const { sha: fileSha } = await api("/blob", await blobBody(f), true);
+      const { sha: fileSha } = await api("/blob", await blobBody(f));
       const th = await makeThumb(f);
-      const thumbSha = th ? (await api("/blob", await blobBody(th), true)).sha : null;
+      const thumbSha = th ? (await api("/blob", await blobBody(th))).sha : null;
       const ext = (f.name.includes(".") ? f.name.split(".").pop() : "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
       const res = await api("/commit", JSON.stringify({ action: "add", kind: "file", member: S.me, day, name: f.name, type: f.type, size: f.size, ext, note, fileSha, thumbSha }));
       applyManifest(res.manifest);
@@ -332,7 +331,6 @@ async function submit() {
     $("picked").hidden = true;
     setStatus(`已上传 ${ok} 项到 Day ${dayNo(day)}。`, "ok");
   } catch (e) {
-    if (e.code === "wrong_password") logout();
     setStatus((ok ? `已上传 ${ok} 项，其余失败：` : "") + errText(e), "err");
   } finally {
     S.busy = false; render();
@@ -354,28 +352,17 @@ async function removeEntry(e, btn) {
   }
 }
 
-// ---------- 登录 ----------
-async function login(ev) {
+// ---------- 选身份 ----------
+function login(ev) {
   ev.preventDefault();
-  const me = $("memberSelect").value, pw = $("pwInput").value;
+  const me = $("memberSelect").value;
   const st = $("loginStatus");
   if (!me) { st.textContent = "先选你的名字。"; st.className = "status err"; return; }
-  $("loginBtn").disabled = true; st.textContent = "正在验证……"; st.className = "status";
-  S.pw = pw;
-  try {
-    await api("/auth", "{}");
-    S.me = me; saveLogin();
-    $("pwInput").value = ""; st.textContent = "";
-    render();
-  } catch (e) {
-    S.pw = null;
-    st.textContent = e.code === "wrong_password" ? "密码不对。" : "连不上服务器，请稍后再试。";
-    st.className = "status err";
-  } finally {
-    $("loginBtn").disabled = false;
-  }
+  st.textContent = "";
+  S.me = me; saveLogin();
+  render();
 }
-function logout() { S.me = null; S.pw = null; saveLogin(); render(); }
+function logout() { S.me = null; saveLogin(); render(); }
 
 // ---------- 事件 ----------
 const drop = $("drop"), fileInput = $("fileInput");

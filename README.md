@@ -1,11 +1,11 @@
 # 橘猫组每日打卡
 
-3D 桌宠小组 30 天每日上传墙。文件保存在这个 GitHub 仓库里，网页用 GitHub Pages 发布，任何设备都能打开；上传和删除通过一个 Cloudflare Worker 完成，组员只需要输入组里的密码。
+3D 桌宠小组 30 天每日上传墙。文件保存在这个 GitHub 仓库里，网页用 GitHub Pages 发布，任何设备都能打开；上传和删除通过一个 Cloudflare Worker 完成。不需要密码，拿到网页链接的人选好名字就能上传。
 
 ```
 浏览器 ──读取──> GitHub Pages（网页 + data/manifest.json + daily/ 里的文件）
    │
-   └──上传/删除（带组密码）──> Cloudflare Worker ──GitHub 密钥──> 本仓库（每次一个 commit）
+   └──上传/删除──> Cloudflare Worker ──GitHub 密钥──> 本仓库（每次一个 commit）
 ```
 
 ## 目录
@@ -58,7 +58,6 @@ GitHub 头像 → **Settings → Developer settings → Personal access tokens �
 cd worker
 npx wrangler login                      # 浏览器里登录 Cloudflare
 npx wrangler secret put GITHUB_TOKEN    # 粘贴上一步的 github_pat_...
-npx wrangler secret put TEAM_PASSWORD   # 设置组里的密码（只用英文字母、数字、符号）
 npx wrangler deploy
 ```
 
@@ -78,22 +77,21 @@ git commit -m "填写 Worker 地址和组员名单"
 git push
 ```
 
-然后把网页地址和组密码发给组员。
+然后把网页地址发给组员。
 
 ## 组员怎么用
 
-1. 打开网页，右侧（手机在上方）选自己的名字、输入组密码，点登录。每台设备只需登录一次。
+1. 打开网页，右侧（手机在上方）选自己的名字，点“确定”。每台设备只需选一次，点“换人”可以重选。
 2. 点打卡墙上的格子选日期（默认今天），选文件或贴链接，写备注，点“上传”。
 3. 过去的日期可以补交，会标“补交”；只能删除自己的上传。
 
 ## 限制和注意
 
 - 单个文件最多 25 MB。更大的 `.blend`、视频请放网盘，贴链接。
-- 共用一个密码，所以“我是谁”是自己选的，靠大家自觉。
+- 没有密码：任何拿到链接的人都能上传和删除，“我是谁”也是自己选的，靠大家自觉。链接不要公开发到群外。
 - 删除只是从最新版本里移除，文件仍留在 git 历史里。上传前确认没有隐私内容。
 - 刚上传的文件，Pages 需要约 1 分钟才更新；这段时间网页会直接从仓库读取，不影响查看。
 - 想改组员名单或开始日期：直接在 GitHub 上编辑 `data/manifest.json` 的 `config` 部分，**不要动 `entries`**。
-- 换密码：`cd worker && npx wrangler secret put TEAM_PASSWORD`，组员重新登录即可。
 
 ## 本地预览
 
