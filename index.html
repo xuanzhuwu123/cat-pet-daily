@@ -3,58 +3,135 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F27A1A">
 <title>치즈냥 팀 매일 인증</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,500;1,9..144,700&family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="style.css">
 <script type="module" src="app.js"></script>
+<script type="module" src="ui.js"></script>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <p class="eyebrow">3D 데스크톱 펫 프로젝트 · 매일 업로드</p>
-      <h1 id="title">치즈냥 팀 <span>매일 인증</span></h1>
-      <p class="range" id="range"></p>
-    </div>
-    <div class="progress" id="progress"></div>
-  </header>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="paw" viewBox="0 0 64 64"><ellipse cx="32" cy="42" rx="15" ry="13"/><ellipse cx="13" cy="26" rx="6.5" ry="8.5" transform="rotate(-18 13 26)"/><ellipse cx="25" cy="14" rx="6.5" ry="9"/><ellipse cx="39" cy="14" rx="6.5" ry="9"/><ellipse cx="51" cy="26" rx="6.5" ry="8.5" transform="rotate(18 51 26)"/></symbol>
+</svg>
+<div class="scrollbar" aria-hidden="true"><i id="scrollBar"></i></div>
 
+<nav class="topnav" id="topnav">
+  <a class="brand" href="#top"><span class="brand-dot" aria-hidden="true"></span>치즈냥</a>
+  <div class="links">
+    <a href="#board" data-sec="board">보드</a>
+    <a href="#day" data-sec="day">기록</a>
+    <a href="#upload" class="cta" data-sec="upload">올리기</a>
+  </div>
+</nav>
+
+<section class="hero" id="top">
+  <div class="blobs" aria-hidden="true">
+    <span class="blob b1" data-depth="0.25"></span>
+    <span class="blob b2" data-depth="0.4"></span>
+    <span class="blob b3" data-depth="0.15"></span>
+  </div>
+
+  <div class="paws" aria-hidden="true">
+    <svg class="paw" style="--i:0;--x:4%;--y:88%;--r:62deg"><use href="#paw"/></svg>
+    <svg class="paw" style="--i:1;--x:10%;--y:78%;--r:48deg"><use href="#paw"/></svg>
+    <svg class="paw" style="--i:2;--x:15%;--y:86%;--r:58deg"><use href="#paw"/></svg>
+    <svg class="paw" style="--i:3;--x:21%;--y:74%;--r:44deg"><use href="#paw"/></svg>
+    <svg class="paw" style="--i:4;--x:27%;--y:81%;--r:52deg"><use href="#paw"/></svg>
+    <svg class="paw" style="--i:5;--x:33%;--y:69%;--r:40deg"><use href="#paw"/></svg>
+  </div>
+
+  <div class="hero-inner">
+    <div class="hero-text">
+      <p class="eyebrow rise" style="--d:0">3D DESKTOP PET PROJECT · 30 DAYS</p>
+      <h1 class="rise" style="--d:1">치즈냥 팀<br><em>매일 인증</em></h1>
+      <p class="lead rise" style="--d:2">하루에 하나씩, 고양이가 조금씩 살아나는 과정을 기록해요.<br>파일이든 링크든 매일 올려 주세요.</p>
+      <p class="range rise" style="--d:3" id="range"></p>
+      <div class="hero-cta rise" style="--d:4">
+        <a class="btn primary big" href="#upload">오늘 올리기</a>
+        <a class="btn ghost big" href="#board">보드 보기</a>
+      </div>
+    </div>
+
+    <div class="hero-art rise" style="--d:2" aria-hidden="true">
+      <div class="orbit"><i></i><i></i><i></i></div>
+      <div class="cat" id="cat">
+        <span class="ear l"></span><span class="ear r"></span>
+        <div class="head">
+          <span class="stripe s1"></span><span class="stripe s2"></span><span class="stripe s3"></span>
+          <span class="eye l"><i></i></span><span class="eye r"><i></i></span>
+          <span class="cheek l"></span><span class="cheek r"></span>
+          <span class="nose"></span><span class="mouth"></span>
+          <span class="whisk l"></span><span class="whisk r"></span>
+        </div>
+      </div>
+      <div class="shadow"></div>
+    </div>
+  </div>
+
+  <div class="ribbons rise" style="--d:5" aria-hidden="true">
+    <div class="ribbon r1"><div class="track"><div class="grp"><span>치즈냥</span><svg class="pw"><use href="#paw"/></svg><span>CHEESE NYANG</span><svg class="pw"><use href="#paw"/></svg><span>3D DESKTOP PET</span><svg class="pw"><use href="#paw"/></svg><span>매일 조금씩</span><svg class="pw"><use href="#paw"/></svg><span>MEOW</span><svg class="pw"><use href="#paw"/></svg><span>말랑말랑</span><svg class="pw"><use href="#paw"/></svg></div><div class="grp"><span>치즈냥</span><svg class="pw"><use href="#paw"/></svg><span>CHEESE NYANG</span><svg class="pw"><use href="#paw"/></svg><span>3D DESKTOP PET</span><svg class="pw"><use href="#paw"/></svg><span>매일 조금씩</span><svg class="pw"><use href="#paw"/></svg><span>MEOW</span><svg class="pw"><use href="#paw"/></svg><span>말랑말랑</span><svg class="pw"><use href="#paw"/></svg></div></div></div>
+    <div class="ribbon r2"><div class="track"><div class="grp"><span>DAILY LOG</span><i>✦</i><span>오늘의 고양이</span><i>✦</i><span>MADE WITH LOVE</span><i>✦</i><span>꼬리 흔들흔들</span><i>✦</i><span>PURR</span><i>✦</i><span>귀 쫑긋</span><i>✦</i></div><div class="grp"><span>DAILY LOG</span><i>✦</i><span>오늘의 고양이</span><i>✦</i><span>MADE WITH LOVE</span><i>✦</i><span>꼬리 흔들흔들</span><i>✦</i><span>PURR</span><i>✦</i><span>귀 쫑긋</span><i>✦</i></div></div></div>
+  </div>
+
+  <a class="scroll-cue" href="#board" aria-label="아래로"><span></span></a>
+</section>
+
+<main>
   <p class="notice" id="notice" hidden></p>
 
-  <section class="board">
-    <div class="board-head">
+  <section class="section" id="board">
+    <header class="sec-head reveal">
+      <p class="kicker"><span>01</span> Board</p>
       <h2>30일 업로드 보드</h2>
-      <div class="legend">안 올림 <i class="lg miss"></i><i class="lg l1"></i><i class="lg l2"></i><i class="lg l3"></i> 3개 이상 · 칸을 누르면 그날을 볼 수 있어요</div>
-    </div>
-    <div class="scroll"><table id="grid"></table></div>
-  </section>
-
-  <section class="day">
-    <div class="day-main" id="dayMain"></div>
-
-    <aside class="side">
-      <div class="panel" id="uploader">
-        <h2 id="upTitle">오늘 올리기</h2>
-        <div class="drop" id="drop" tabindex="0" role="button">
-          <b>여기를 눌러 파일을 고르거나 끌어다 놓으세요</b>
-          <span>형식 상관없이 파일당 25MB까지</span>
-        </div>
-        <input type="file" id="fileInput" multiple hidden>
-        <p class="picked" id="picked" hidden></p>
-        <div class="or">또는 링크 붙이기</div>
-        <label>링크 (큰 파일은 클라우드에 올리고 여기에 붙여 주세요)
-          <input type="url" id="linkInput" placeholder="https://...">
-        </label>
-        <label>메모 (선택)
-          <textarea id="noteInput" maxlength="500" placeholder="오늘 한 일, 예: tail1–tail5에 꼬리 흔들기 추가"></textarea>
-        </label>
-        <button class="btn primary" id="submitBtn" type="button">올리기</button>
-        <p class="status" id="status" role="status"></p>
+      <div class="legend">
+        <span><i class="lg l1"></i>1개</span>
+        <span><i class="lg l2"></i>2개</span>
+        <span><i class="lg l3"></i>3개 이상</span>
+        <span class="tip">칸을 누르면 그날 기록으로 이동해요</span>
       </div>
-    </aside>
+    </header>
+    <div class="tiles reveal" id="grid"></div>
   </section>
-</div>
+
+  <section class="section" id="day">
+    <header class="sec-head reveal">
+      <p class="kicker"><span>02</span> Daily log</p>
+      <h2>그날의 기록</h2>
+    </header>
+    <div class="day">
+      <div class="day-main reveal" id="dayMain"></div>
+
+      <aside class="side reveal" id="upload">
+        <div class="panel" id="uploader">
+          <h2 id="upTitle">오늘 올리기</h2>
+          <div class="drop" id="drop" tabindex="0" role="button">
+            <span class="drop-icon" aria-hidden="true"></span>
+            <b>여기를 눌러 파일을 고르거나 끌어다 놓으세요</b>
+            <span>형식 상관없이 파일당 25MB까지</span>
+          </div>
+          <input type="file" id="fileInput" multiple hidden>
+          <p class="picked" id="picked" hidden></p>
+          <div class="or">또는 링크 붙이기</div>
+          <label>링크 (큰 파일은 클라우드에 올리고 여기에 붙여 주세요)
+            <input type="url" id="linkInput" placeholder="https://...">
+          </label>
+          <label>메모 (선택)
+            <textarea id="noteInput" maxlength="500" placeholder="오늘 한 일, 예: tail1–tail5에 꼬리 흔들기 추가"></textarea>
+          </label>
+          <button class="btn primary" id="submitBtn" type="button"><span>올리기</span></button>
+          <p class="status" id="status" role="status"></p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>치즈냥 팀 · 3D 데스크톱 펫 · 매일 조금씩</p>
+  <a href="#top">맨 위로 ↑</a>
+</footer>
 </body>
 </html>

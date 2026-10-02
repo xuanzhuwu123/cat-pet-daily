@@ -94,13 +94,6 @@ function counts() {
   for (const e of S.entries) m.set(e.day, (m.get(e.day) || 0) + 1);
   return m;
 }
-function streak(c) {
-  let d = today();
-  if (!c.get(d)) d = addDays(d, -1);
-  let n = 0;
-  while (dayNo(d) >= 1 && c.get(d)) { n++; d = addDays(d, -1); }
-  return n;
-}
 const sizeText = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
 const timeText = iso => { if (!iso) return ""; const d = new Date(iso); return `${md(fmt(d))} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
@@ -108,60 +101,55 @@ function render() {
   const t = today();
   const days = dayList();
   const c = counts();
-  const nowNo = Math.min(Math.max(dayNo(t), 0), DAYS());
 
   if (S.config && S.config.title) document.title = S.config.title;
   $("range").textContent = S.config ? `${start()} → ${days[days.length - 1]}` : "불러오는 중…";
-  const done = days.filter(d => d <= t && c.get(d)).length;
-  $("progress").replaceChildren(
-    h("div", { class: "big" }, h("span", {}, h("b", {}, nowNo), `일차 / ${DAYS()}일`), h("span", {}, nowNo ? `달성률 ${Math.round(done / nowNo * 100)}%` : "")),
-    h("div", { class: "bar" }, h("i", { style: `width:${nowNo / DAYS() * 100}%` })));
 
   const notice = $("notice");
   notice.hidden = !S.error;
   notice.textContent = S.error;
-  notice.className = "notice err";
 
-  // 打卡墙
-  const grid = $("grid");
-  const hr = h("tr", {}, h("th", { class: "who" }));
-  for (const d of days) {
-    const cls = [d === t ? "today" : "", d === S.sel ? "sel" : ""].join(" ").trim() || null;
-    hr.append(h("th", { class: cls, title: `${d} ${WEEK[parse(d).getDay()]}` }, h("b", {}, dayNo(d)), md(d)));
-  }
-  const total = days.filter(d => c.get(d)).length;
-  const tr = h("tr", {}, h("th", { class: "who" },
-    h("div", { class: "nm" }, "업로드"),
-    h("small", {}, `${total}일 · 연속 ${streak(c)}`)));
-  for (const d of days) {
+  // 30 天格子
+  $("grid").replaceChildren(...days.map((d, i) => {
     const n = c.get(d) || 0;
-    let cls = "cell";
+    let cls = "tile";
     if (d > t) cls += " future";
-    else if (!n) cls += d < t ? " miss" : " me-today";
+    else if (!n) cls += " none";
     else cls += n >= 3 ? " l3" : n === 2 ? " l2" : " l1";
-    tr.append(h("td", { class: d === S.sel ? "sel" : null },
-      h("button", { class: cls, title: `${d} · ${n}개`, "aria-label": `${d} ${n}개`, onclick: () => select(d) }, n || "")));
-  }
-  grid.replaceChildren(h("thead", {}, hr), h("tbody", {}, tr));
+    if (d === t) cls += " today";
+    if (d === S.sel) cls += " sel";
+    return h("button", { class: cls, style: `--i:${i}`, type: "button", disabled: d > t,
+      title: `${d} ${WEEK[parse(d).getDay()]} · ${n}개`, "aria-label": `Day ${dayNo(d)}, ${d}, ${n}개`,
+      onclick: () => { select(d); document.getElementById("day").scrollIntoView({ behavior: "smooth" }); } },
+      h("span", { class: "no" }, dayNo(d)),
+      n ? h("span", { class: "cnt" }, n) : null,
+      h("span", { class: "dt" }, md(d)));
+  }));
 
   renderDay(t);
   renderSide(t);
 }
 
+let daySig = "";
 function renderDay(t) {
   const main = $("dayMain");
   if (!S.sel) { main.replaceChildren(); return; }
   const sel = S.sel, no = dayNo(sel), d = parse(sel);
   const list = S.entries.filter(e => e.day === sel).sort((a, b) => (a.time || "") < (b.time || "") ? -1 : 1);
-  const kids = [h("div", { class: "day-title" },
+  // 内容没变就不重画，避免卡片动画反复播放
+  const sig = [sel, t, list.map(e => e.id + (S.mine.has(e.id) ? "*" : "")).join(",")].join("|");
+  if (sig === daySig) return;
+  const swapped = !daySig.startsWith(sel + "|");
+  daySig = sig;
+  const kids = [h("div", { class: "day-title" + (swapped ? " swap" : "") },
     h("span", { class: "n" }, `Day ${no}`),
     h("h2", {}, `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEK[d.getDay()]}`),
-    h("span", { class: "d" }, sel === t ? "오늘" : sel > t ? "아직 전" : `${diff(t, sel)}일 전`),
+    h("span", { class: "d" + (sel === t ? " now" : "") }, sel === t ? "오늘" : sel > t ? "아직 전" : `${diff(t, sel)}일 전`),
     h("div", { class: "nav" },
       h("button", { class: "btn", disabled: no <= 1, onclick: () => select(addDays(sel, -1)) }, "← 이전 날"),
       h("button", { class: "btn", disabled: no >= DAYS(), onclick: () => select(addDays(sel, 1)) }, "다음 날 →")))];
   if (!list.length) kids.push(h("p", { class: "empty" }, sel > t ? "아직 오지 않은 날이에요." : "이 날은 아직 아무것도 올라오지 않았어요."));
-  else kids.push(h("div", { class: "files" }, list.map(fileCard)));
+  else kids.push(h("div", { class: "files" }, list.map((e, i) => { const el = fileCard(e); el.style.setProperty("--i", i); return el; })));
   main.replaceChildren(...kids);
 }
 
@@ -188,7 +176,6 @@ function fileCard(e) {
     const ext = isLink ? "LINK" : (e.name.split(".").pop() || "FILE").toUpperCase().slice(0, 5);
     thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" }, h("span", { class: "ext" }, ext));
   }
-  const late = e.time && fmt(new Date(e.time)) > e.day;
   const del = S.mine.has(e.id) ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제") : null;
   return h("div", { class: "file" }, thumb,
     h("div", { class: "meta" },
@@ -197,13 +184,12 @@ function fileCard(e) {
       h("div", { class: "row" },
         h("span", {}, timeText(e.time)),
         e.size ? h("span", {}, sizeText(e.size)) : null,
-        late ? h("span", { class: "tag late" }, "늦게 제출") : null,
         del)));
 }
 
 function renderSide(t) {
   const no = S.sel ? dayNo(S.sel) : 0;
-  $("upTitle").textContent = S.sel === t ? "오늘 올리기" : S.sel > t ? "아직 오지 않은 날이에요" : `Day ${no}에 늦게 제출`;
+  $("upTitle").textContent = S.sel === t ? "오늘 올리기" : S.sel > t ? "아직 오지 않은 날이에요" : `Day ${no}에 올리기`;
   $("submitBtn").disabled = S.busy || !S.sel || S.sel > t;
 }
 
