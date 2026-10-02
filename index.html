@@ -14,7 +14,7 @@
 <div class="wrap">
   <header>
     <div>
-      <p class="eyebrow">3D 데스크톱 펫 프로젝트 · 멤버 매일 업로드</p>
+      <p class="eyebrow">3D 데스크톱 펫 프로젝트 · 30일 기록</p>
       <h1 id="title">치즈냥 팀 <span>매일 인증</span></h1>
       <p class="range" id="range"></p>
     </div>
@@ -25,33 +25,23 @@
 
   <section class="board">
     <div class="board-head">
-      <h2>30일 업로드 보드</h2>
-      <div class="legend">안 올림 <i class="lg miss"></i><i class="lg l1"></i><i class="lg l2"></i><i class="lg l3"></i> 3개 이상 · 칸을 누르면 그날을 볼 수 있어요</div>
+      <h2>30일 보드</h2>
+      <p class="legend">날짜를 누르면 그날 올린 것을 볼 수 있어요</p>
     </div>
-    <div class="scroll"><table id="grid"></table></div>
+    <div class="days" id="days"></div>
   </section>
 
   <section class="day">
     <div class="day-main" id="dayMain"></div>
 
     <aside class="side">
-      <form class="panel" id="loginForm" hidden>
-        <h2>이름만 고르면 바로 올릴 수 있어요</h2>
-        <label>나는
-          <select id="memberSelect"></select>
+      <div class="panel" id="uploader">
+        <h2>올리기</h2>
+        <label>날짜
+          <select id="daySelect"></select>
         </label>
-        <button class="btn primary" type="submit" id="loginBtn">확인</button>
-        <p class="status" id="loginStatus" role="status"></p>
-      </form>
-
-      <div class="panel" id="uploader" hidden>
-        <div class="who-bar">
-          <h2 id="upTitle">오늘 올리기</h2>
-          <button class="link-btn" id="logoutBtn" type="button">사람 바꾸기</button>
-        </div>
-        <p class="hint" id="whoami"></p>
         <div class="drop" id="drop" tabindex="0" role="button">
-          <b>여기를 눌러 파일을 고르거나 끌어다 놓으세요</b>
+          <b>파일을 고르거나 끌어다 놓으세요</b>
           <span>형식 상관없이 파일당 25MB까지</span>
         </div>
         <input type="file" id="fileInput" multiple hidden>
@@ -69,5 +59,17 @@
     </aside>
   </section>
 </div>
+
+<dialog class="viewer" id="viewer" tabindex="-1">
+  <div class="viewer-top">
+    <span class="viewer-count" id="viewerCount"></span>
+    <a class="viewer-open" id="viewerOpen" target="_blank" rel="noopener">원본 열기</a>
+    <button class="viewer-x" id="viewerClose" type="button" aria-label="닫기">×</button>
+  </div>
+  <button class="viewer-nav prev" id="viewerPrev" type="button" aria-label="이전">‹</button>
+  <div class="viewer-stage" id="viewerStage"></div>
+  <button class="viewer-nav next" id="viewerNext" type="button" aria-label="다음">›</button>
+  <div class="viewer-cap" id="viewerCap"></div>
+</dialog>
 </body>
 </html>

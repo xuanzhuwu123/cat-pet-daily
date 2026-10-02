@@ -3,22 +3,11 @@ import { WORKER_URL, REPO, BRANCH } from "./site-config.js";
 const MAX_BYTES = 25 * 1024 * 1024;
 const THUMB_PX = 480;
 const WEEK = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-const COLORS = ["#E0741A", "#2F7ED8", "#1F9D6B", "#B04BC8", "#C9A21B", "#D2455A", "#4B8F99", "#7A6FD0"];
+const WK = ["일", "월", "화", "수", "목", "금", "토"];
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
-const S = { config: null, entries: [], sel: null, me: null, busy: false, error: "" };
+const S = { config: null, entries: [], sel: null, busy: false, error: "", view: null };
 const $ = id => document.getElementById(id);
-
-// ---------- 本机记住的身份 ----------
-function loadLogin() {
-  try {
-    const v = JSON.parse(localStorage.getItem("daily-login") || "null");
-    if (v && v.me) S.me = v.me;
-  } catch {}
-}
-function saveLogin() {
-  try { S.me ? localStorage.setItem("daily-login", JSON.stringify({ me: S.me })) : localStorage.removeItem("daily-login"); } catch {}
-}
 
 // ---------- 日期（按本地时间） ----------
 const pad = n => String(n).padStart(2, "0");
@@ -47,30 +36,23 @@ function h(tag, props, ...kids) {
   return el;
 }
 
-// ---------- 数据 ----------
-const members = () => (S.config && S.config.members) || [];
-const memberOf = id => members().find(m => m.id === id);
-const colorOf = id => COLORS[Math.max(0, members().findIndex(m => m.id === id)) % COLORS.length];
-const nameOf = id => (memberOf(id) || {}).name || id;
-
 // 新文件刚提交时 Pages 还没更新（约 1 分钟），先从仓库直接读
 function fileUrl(path, time) {
   const fresh = time && Date.now() - new Date(time).getTime() < 10 * 60 * 1000;
   return fresh ? RAW_BASE + encodePath(path) : encodePath(path);
 }
 const encodePath = p => p.split("/").map(encodeURIComponent).join("/");
-function withFallback(img, path) {
-  img.addEventListener("error", () => {
-    if (!img.dataset.retried) { img.dataset.retried = "1"; img.src = RAW_BASE + encodePath(path); }
+function withFallback(el, path) {
+  el.addEventListener("error", () => {
+    if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = RAW_BASE + encodePath(path); }
   });
-  return img;
+  return el;
 }
 
 function applyManifest(m) {
   if (!m || !m.config) return;
   S.config = m.config;
   S.entries = Array.isArray(m.entries) ? m.entries : [];
-  if (S.me && !memberOf(S.me)) { S.me = null; saveLogin(); }
   const no = S.sel ? dayNo(S.sel) : 0;
   if (no < 1 || no > DAYS()) {
     const t = today(), tn = dayNo(t);
@@ -91,7 +73,6 @@ async function loadManifest() {
     else throw new Error();
   } catch {
     if (!S.config) S.error = "데이터를 불러오지 못했어요. 네트워크를 확인하고 새로고침해 주세요.";
-    else S.error = S.error || "";
   }
   render();
 }
@@ -99,32 +80,26 @@ async function loadManifest() {
 // ---------- 渲染 ----------
 function counts() {
   const m = new Map();
-  for (const e of S.entries) { const k = e.member + "|" + e.day; m.set(k, (m.get(k) || 0) + 1); }
+  for (const e of S.entries) m.set(e.day, (m.get(e.day) || 0) + 1);
   return m;
-}
-function streak(id, c) {
-  let d = today();
-  if (!c.get(id + "|" + d)) d = addDays(d, -1);
-  let n = 0;
-  while (dayNo(d) >= 1 && c.get(id + "|" + d)) { n++; d = addDays(d, -1); }
-  return n;
 }
 const sizeText = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
 const timeText = iso => { if (!iso) return ""; const d = new Date(iso); return `${md(fmt(d))} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const isImage = e => e.kind !== "link" && (e.thumb || (e.type || "").startsWith("image/"));
+const isVideo = e => e.kind !== "link" && (e.type || "").startsWith("video/");
+const dayEntries = d => S.entries.filter(e => e.day === d).sort((a, b) => (a.time || "") < (b.time || "") ? -1 : 1);
 
 function render() {
   const t = today();
   const days = dayList();
   const c = counts();
-  const ids = members().map(m => m.id);
   const nowNo = Math.min(Math.max(dayNo(t), 0), DAYS());
 
   if (S.config && S.config.title) document.title = S.config.title;
   $("range").textContent = S.config ? `${start()} → ${days[days.length - 1]}` : "불러오는 중…";
-  const done = ids.reduce((a, id) => a + days.filter(d => d <= t && c.get(id + "|" + d)).length, 0);
-  const possible = ids.length * nowNo;
+  const filled = days.filter(d => c.get(d)).length;
   $("progress").replaceChildren(
-    h("div", { class: "big" }, h("span", {}, h("b", {}, nowNo), `일차 / ${DAYS()}일`), h("span", {}, possible ? `팀 달성률 ${Math.round(done / possible * 100)}%` : "")),
+    h("div", { class: "big" }, h("span", {}, h("b", {}, nowNo), `일차 / ${DAYS()}일`), h("span", {}, `기록한 날 ${filled}일 · 파일 ${S.entries.length}개`)),
     h("div", { class: "bar" }, h("i", { style: `width:${nowNo / DAYS() * 100}%` })));
 
   const notice = $("notice");
@@ -132,113 +107,81 @@ function render() {
   notice.textContent = S.error;
   notice.className = "notice err";
 
-  // 打卡墙
-  const grid = $("grid");
-  const hr = h("tr", {}, h("th", { class: "who" }, "멤버"));
-  for (const d of days) {
-    const cls = [d === t ? "today" : "", d === S.sel ? "sel" : ""].join(" ").trim() || null;
-    hr.append(h("th", { class: cls, title: `${d} ${WEEK[parse(d).getDay()]}` }, h("b", {}, dayNo(d)), md(d)));
-  }
-  const tb = h("tbody");
-  for (const id of ids) {
-    const nm = nameOf(id);
-    const total = days.filter(d => c.get(id + "|" + d)).length;
-    const tr = h("tr", {}, h("th", { class: "who" },
-      h("div", { class: "nm" }, h("span", { class: "dot", style: `background:${colorOf(id)}` }), h("span", {}, nm + (id === S.me ? " (나)" : ""))),
-      h("small", {}, `${total}일 · 연속 ${streak(id, c)}`)));
-    for (const d of days) {
-      const n = c.get(id + "|" + d) || 0;
-      let cls = "cell";
-      if (d > t) cls += " future";
-      else if (!n) cls += d < t ? " miss" : "";
-      else cls += n >= 3 ? " l3" : n === 2 ? " l2" : " l1";
-      if (id === S.me && d === t && !n) cls += " me-today";
-      tr.append(h("td", { class: d === S.sel ? "sel" : null },
-        h("button", { class: cls, title: `${nm} · ${d} · ${n}개`, "aria-label": `${nm} ${d} ${n}개`, onclick: () => select(d) }, n || "")));
-    }
-    tb.append(tr);
-  }
-  grid.replaceChildren(h("thead", {}, hr), tb);
+  // 30 天格子
+  $("days").replaceChildren(...days.map(d => {
+    const n = c.get(d) || 0;
+    const cls = ["tile", n ? "has" : d < t ? "miss" : "", d > t ? "future" : "", d === t ? "today" : "", d === S.sel ? "sel" : ""].filter(Boolean).join(" ");
+    return h("button", { class: cls, type: "button", title: `${d} ${WEEK[parse(d).getDay()]} · ${n}개`, "aria-pressed": d === S.sel ? "true" : "false", onclick: () => select(d) },
+      h("span", { class: "no" }, dayNo(d)),
+      h("span", { class: "dt" }, d === t ? "오늘" : md(d)),
+      n ? h("span", { class: "cnt" }, n) : null);
+  }));
 
-  renderDay(t, ids);
+  renderDay(t);
   renderSide(t);
 }
 
-function renderDay(t, ids) {
+function renderDay(t) {
   const main = $("dayMain");
   if (!S.sel) { main.replaceChildren(); return; }
   const sel = S.sel, no = dayNo(sel), d = parse(sel);
-  const list = S.entries.filter(e => e.day === sel).sort((a, b) => (a.time || "") < (b.time || "") ? -1 : 1);
+  const list = dayEntries(sel);
   const kids = [h("div", { class: "day-title" },
     h("span", { class: "n" }, `Day ${no}`),
     h("h2", {}, `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEK[d.getDay()]}`),
-    h("span", { class: "d" }, sel === t ? "오늘" : sel > t ? "아직 전" : `${diff(t, sel)}일 전`),
+    h("span", { class: "d" }, sel === t ? "오늘" : sel > t ? `${diff(sel, t)}일 후` : `${diff(t, sel)}일 전`),
     h("div", { class: "nav" },
-      h("button", { class: "btn", disabled: no <= 1, onclick: () => select(addDays(sel, -1)) }, "← 이전 날"),
-      h("button", { class: "btn", disabled: no >= DAYS(), onclick: () => select(addDays(sel, 1)) }, "다음 날 →")))];
-  if (!list.length) kids.push(h("p", { class: "empty" }, sel > t ? "아직 오지 않은 날이에요." : "이 날은 아직 아무도 올리지 않았어요."));
-  for (const id of ids) {
-    const mine = list.filter(e => e.member === id);
-    if (!mine.length) continue;
-    kids.push(h("div", { class: "group" },
-      h("h3", {}, h("span", { class: "dot", style: `background:${colorOf(id)}` }), nameOf(id), h("em", {}, `${mine.length}개`)),
-      h("div", { class: "files" }, mine.map(fileCard))));
+      h("button", { class: "btn icon", "aria-label": "이전 날", disabled: no <= 1, onclick: () => select(addDays(sel, -1)) }, "‹"),
+      h("button", { class: "btn icon", "aria-label": "다음 날", disabled: no >= DAYS(), onclick: () => select(addDays(sel, 1)) }, "›")))];
+  if (!list.length) {
+    kids.push(h("div", { class: "empty" },
+      h("b", {}, sel > t ? "아직 오지 않은 날이에요" : "이 날은 아직 비어 있어요"),
+      h("span", {}, "오른쪽에서 파일이나 링크를 올려 보세요.")));
+  } else {
+    const viewable = list.filter(e => isImage(e) || isVideo(e));
+    kids.push(h("div", { class: "files" }, list.map(e => fileCard(e, viewable))));
   }
-  const lazy = ids.filter(id => !list.some(e => e.member === id));
-  if (list.length && lazy.length && sel <= t) kids.push(h("p", { class: "missing" }, "아직 안 올린 사람: " + lazy.map(nameOf).join(", ")));
   main.replaceChildren(...kids);
 }
 
-function fileCard(e) {
+function fileCard(e, viewable) {
   const isLink = e.kind === "link";
   const href = isLink ? e.url : fileUrl(e.path, e.time);
-  const type = e.type || "";
-  let thumb;
-  if (!isLink && e.thumb) {
-    thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" },
-      withFallback(h("img", { src: fileUrl(e.thumb, e.time), alt: e.name, loading: "lazy", decoding: "async" }), e.thumb));
-  } else if (!isLink && type.startsWith("image/") && (e.size || 0) < 400 * 1024) {
-    thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" },
-      withFallback(h("img", { src: href, alt: e.name, loading: "lazy", decoding: "async" }), e.path));
-  } else if (!isLink && type.startsWith("video/")) {
-    // 视频只在点击后才加载
-    thumb = h("button", { class: "thumb", type: "button", onclick: ev => {
-      const v = h("video", { src: href, controls: true, autoplay: true, playsinline: true });
-      v.addEventListener("error", () => { if (!v.dataset.retried) { v.dataset.retried = "1"; v.src = RAW_BASE + encodePath(e.path); } }, { once: true });
-      ev.currentTarget.replaceChildren(v);
-      ev.currentTarget.onclick = null;
-    } }, h("span", { class: "play" }, h("b", {}, "▶"), `재생 · ${sizeText(e.size || 0)}`));
+  const open = viewable.includes(e) ? ev => { ev.preventDefault(); openViewer(viewable, viewable.indexOf(e)); } : null;
+  let inner;
+  if (isImage(e) && (e.thumb || (e.size || 0) < 400 * 1024)) {
+    const src = e.thumb || e.path;
+    inner = withFallback(h("img", { src: fileUrl(src, e.time), alt: e.name, loading: "lazy", decoding: "async" }), src);
+  } else if (isVideo(e)) {
+    inner = h("span", { class: "play" }, h("b", {}, "▶"), sizeText(e.size || 0));
   } else {
-    const ext = isLink ? "LINK" : (e.name.split(".").pop() || "FILE").toUpperCase().slice(0, 5);
-    thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" }, h("span", { class: "ext" }, ext));
+    const label = isLink ? "LINK" : (e.name.split(".").pop() || "FILE").toUpperCase().slice(0, 5);
+    inner = h("span", { class: "ext" }, label);
   }
   const late = e.time && fmt(new Date(e.time)) > e.day;
-  const del = e.member === S.me ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제") : null;
-  return h("div", { class: "file" }, thumb,
-    h("div", { class: "meta" },
-      h("a", { href, target: "_blank", rel: "noopener" }, e.name || "이름 없음"),
+  return h("figure", { class: "file" },
+    h("a", { class: "thumb" + (isLink ? " link" : ""), href, target: "_blank", rel: "noopener", onclick: open, "aria-label": e.name }, inner),
+    h("figcaption", {},
+      h("div", { class: "name", title: e.name }, e.name || "이름 없음"),
       e.note ? h("p", {}, e.note) : null,
       h("div", { class: "row" },
         h("span", {}, timeText(e.time)),
         e.size ? h("span", {}, sizeText(e.size)) : null,
-        late ? h("span", { class: "tag late" }, "늦게 제출") : null,
-        del)));
+        late ? h("span", { class: "tag" }, "늦게 제출") : null,
+        h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제"))));
 }
 
 function renderSide(t) {
-  const logged = !!S.me;
-  $("loginForm").hidden = logged || !S.config;
-  $("uploader").hidden = !logged;
-  const sel = $("memberSelect");
-  if (!logged && S.config && sel.options.length !== members().length + 1) {
-    sel.replaceChildren(h("option", { value: "" }, "이름을 선택하세요"), ...members().map(m => h("option", { value: m.id }, m.name)));
+  const sel = $("daySelect");
+  const days = dayList();
+  if (sel.options.length !== days.length || sel.options[0].value !== days[0]) {
+    sel.replaceChildren(...days.map(d => h("option", { value: d },
+      `Day ${dayNo(d)} · ${md(d)} (${WK[parse(d).getDay()]})${d === t ? " · 오늘" : ""}`)));
   }
-  if (logged) {
-    $("whoami").textContent = `현재: ${nameOf(S.me)}`;
-    const no = S.sel ? dayNo(S.sel) : 0;
-    $("upTitle").textContent = S.sel === t ? "오늘 올리기" : S.sel > t ? "아직 오지 않은 날이에요" : `Day ${no}에 늦게 제출`;
-    $("submitBtn").disabled = S.busy || !S.sel || S.sel > t;
-  }
+  if (S.sel) sel.value = S.sel;
+  $("submitBtn").textContent = S.sel ? `Day ${dayNo(S.sel)}에 올리기` : "올리기";
+  $("submitBtn").disabled = S.busy || !S.sel;
+  $("uploader").classList.toggle("busy", S.busy);
 }
 
 function select(d) {
@@ -247,6 +190,33 @@ function select(d) {
   S.sel = d;
   render();
 }
+
+// ---------- 预览弹窗 ----------
+function openViewer(list, i) {
+  S.view = { list, i };
+  showView();
+  const dlg = $("viewer");
+  if (!dlg.open) { dlg.showModal(); dlg.focus(); }
+}
+function showView() {
+  const { list, i } = S.view;
+  const e = list[i];
+  const src = fileUrl(e.path, e.time);
+  const media = isVideo(e)
+    ? withFallback(h("video", { src, controls: true, autoplay: true, playsinline: true }), e.path)
+    : withFallback(h("img", { src, alt: e.name, decoding: "async" }), e.path);
+  $("viewerStage").replaceChildren(media);
+  $("viewerOpen").href = src;
+  $("viewerCount").textContent = list.length > 1 ? `${i + 1} / ${list.length}` : "";
+  $("viewerCap").replaceChildren(h("b", {}, e.name), e.note ? h("span", {}, e.note) : null);
+  $("viewerPrev").hidden = $("viewerNext").hidden = list.length < 2;
+}
+function stepView(n) {
+  if (!S.view || S.view.list.length < 2) return;
+  S.view.i = (S.view.i + n + S.view.list.length) % S.view.list.length;
+  showView();
+}
+function closeViewer() { $("viewer").close(); }
 
 // ---------- 和 Worker 通信 ----------
 async function api(path, body) {
@@ -316,14 +286,14 @@ async function submit() {
       const th = await makeThumb(f);
       const thumbSha = th ? (await api("/blob", await blobBody(th))).sha : null;
       const ext = (f.name.includes(".") ? f.name.split(".").pop() : "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
-      const res = await api("/commit", JSON.stringify({ action: "add", kind: "file", member: S.me, day, name: f.name, type: f.type, size: f.size, ext, note, fileSha, thumbSha }));
+      const res = await api("/commit", JSON.stringify({ action: "add", kind: "file", day, name: f.name, type: f.type, size: f.size, ext, note, fileSha, thumbSha }));
       applyManifest(res.manifest);
       ok++;
     }
     if (link) {
       let name = link;
       try { const u = new URL(link); name = u.hostname + u.pathname.replace(/\/$/, ""); } catch {}
-      const res = await api("/commit", JSON.stringify({ action: "add", kind: "link", member: S.me, day, url: link, name, note }));
+      const res = await api("/commit", JSON.stringify({ action: "add", kind: "link", day, url: link, name, note }));
       applyManifest(res.manifest);
       ok++;
     }
@@ -352,18 +322,6 @@ async function removeEntry(e, btn) {
   }
 }
 
-// ---------- 选身份 ----------
-function login(ev) {
-  ev.preventDefault();
-  const me = $("memberSelect").value;
-  const st = $("loginStatus");
-  if (!me) { st.textContent = "먼저 이름을 선택하세요."; st.className = "status err"; return; }
-  st.textContent = "";
-  S.me = me; saveLogin();
-  render();
-}
-function logout() { S.me = null; saveLogin(); render(); }
-
 // ---------- 事件 ----------
 const drop = $("drop"), fileInput = $("fileInput");
 function showPicked() {
@@ -381,12 +339,18 @@ drop.addEventListener("drop", e => {
   if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; showPicked(); }
 });
 fileInput.addEventListener("change", showPicked);
+$("daySelect").addEventListener("change", e => select(e.target.value));
 $("submitBtn").addEventListener("click", submit);
-$("loginForm").addEventListener("submit", login);
-$("logoutBtn").addEventListener("click", logout);
+
+const viewer = $("viewer");
+$("viewerClose").addEventListener("click", closeViewer);
+$("viewerPrev").addEventListener("click", () => stepView(-1));
+$("viewerNext").addEventListener("click", () => stepView(1));
+viewer.addEventListener("click", e => { if (e.target === viewer || e.target === $("viewerStage")) closeViewer(); });
+viewer.addEventListener("keydown", e => { if (e.key === "ArrowLeft") stepView(-1); if (e.key === "ArrowRight") stepView(1); });
+viewer.addEventListener("close", () => { $("viewerStage").replaceChildren(); S.view = null; });
 // 回到页面时刷新一次，看到别人新传的
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !S.busy) loadManifest(); });
 
-loadLogin();
 render();
 loadManifest();

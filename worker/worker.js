@@ -137,18 +137,12 @@ async function commit(request, env, cors) {
   throw fail(409, "busy", "同时上传的人太多，请重试");
 }
 
-function findMember(manifest, id) {
-  const m = (manifest.config && manifest.config.members || []).find(x => x.id === id);
-  if (!m) throw fail(400, "bad_member", "组员不存在");
-  return m;
-}
-
 function planAdd(manifest, b) {
-  const member = findMember(manifest, b.member);
+  // 不再区分组员，按天存放：daily/<日期>/<id>.<ext>
   if (!DAY_RE.test(b.day || "")) throw fail(400, "bad_day", "日期格式不对");
   const note = String(b.note || "").slice(0, MAX_NOTE);
   const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-  const entry = { id, member: member.id, day: b.day, note, time: new Date().toISOString() };
+  const entry = { id, day: b.day, note, time: new Date().toISOString() };
   const tree = [];
 
   if (b.kind === "link") {
@@ -158,7 +152,7 @@ function planAdd(manifest, b) {
     if (!SHA_RE.test(b.fileSha || "")) throw fail(400, "bad_blob", "缺少文件");
     const ext = String(b.ext || "").toLowerCase();
     if (!EXT_RE.test(ext)) throw fail(400, "bad_ext", "文件扩展名不对");
-    const base = `daily/${member.id}/${b.day}/${id}`;
+    const base = `daily/${b.day}/${id}`;
     Object.assign(entry, {
       kind: "file",
       name: String(b.name || `file.${ext}`).slice(0, 200),
@@ -174,7 +168,7 @@ function planAdd(manifest, b) {
     }
   }
   manifest.entries.push(entry);
-  return { tree, entry, message: `${member.name} ${b.day}：${entry.name}` };
+  return { tree, entry, message: `${b.day}：${entry.name}` };
 }
 
 function planDelete(manifest, b) {
@@ -183,6 +177,5 @@ function planDelete(manifest, b) {
   const [entry] = manifest.entries.splice(i, 1);
   const tree = [];
   for (const p of [entry.path, entry.thumb]) if (p) tree.push({ path: p, mode: "100644", type: "blob", sha: null });
-  const member = (manifest.config.members || []).find(x => x.id === entry.member);
-  return { tree, entry, message: `删除 ${member ? member.name : entry.member} ${entry.day}：${entry.name}` };
+  return { tree, entry, message: `删除 ${entry.day}：${entry.name}` };
 }
