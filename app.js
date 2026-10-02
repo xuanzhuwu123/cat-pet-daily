@@ -3,21 +3,20 @@ import { WORKER_URL, REPO, BRANCH } from "./site-config.js";
 const MAX_BYTES = 25 * 1024 * 1024;
 const THUMB_PX = 480;
 const WEEK = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
-const COLORS = ["#E0741A", "#2F7ED8", "#1F9D6B", "#B04BC8", "#C9A21B", "#D2455A", "#4B8F99", "#7A6FD0"];
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
-const S = { config: null, entries: [], sel: null, me: null, busy: false, error: "" };
+const S = { config: null, entries: [], sel: null, mine: new Set(), busy: false, error: "" };
 const $ = id => document.getElementById(id);
 
-// ---------- 本机记住的身份 ----------
-function loadLogin() {
+// ---------- 本机上传过的记录（只能删除自己在这台设备上传的） ----------
+function loadMine() {
   try {
-    const v = JSON.parse(localStorage.getItem("daily-login") || "null");
-    if (v && v.me) S.me = v.me;
+    const v = JSON.parse(localStorage.getItem("daily-mine") || "[]");
+    if (Array.isArray(v)) S.mine = new Set(v);
   } catch {}
 }
-function saveLogin() {
-  try { S.me ? localStorage.setItem("daily-login", JSON.stringify({ me: S.me })) : localStorage.removeItem("daily-login"); } catch {}
+function saveMine() {
+  try { localStorage.setItem("daily-mine", JSON.stringify([...S.mine])); } catch {}
 }
 
 // ---------- 日期（按本地时间） ----------
@@ -47,12 +46,6 @@ function h(tag, props, ...kids) {
   return el;
 }
 
-// ---------- 数据 ----------
-const members = () => (S.config && S.config.members) || [];
-const memberOf = id => members().find(m => m.id === id);
-const colorOf = id => COLORS[Math.max(0, members().findIndex(m => m.id === id)) % COLORS.length];
-const nameOf = id => (memberOf(id) || {}).name || id;
-
 // 新文件刚提交时 Pages 还没更新（约 1 分钟），先从仓库直接读
 function fileUrl(path, time) {
   const fresh = time && Date.now() - new Date(time).getTime() < 10 * 60 * 1000;
@@ -70,7 +63,6 @@ function applyManifest(m) {
   if (!m || !m.config) return;
   S.config = m.config;
   S.entries = Array.isArray(m.entries) ? m.entries : [];
-  if (S.me && !memberOf(S.me)) { S.me = null; saveLogin(); }
   const no = S.sel ? dayNo(S.sel) : 0;
   if (no < 1 || no > DAYS()) {
     const t = today(), tn = dayNo(t);
@@ -99,14 +91,14 @@ async function loadManifest() {
 // ---------- 渲染 ----------
 function counts() {
   const m = new Map();
-  for (const e of S.entries) { const k = e.member + "|" + e.day; m.set(k, (m.get(k) || 0) + 1); }
+  for (const e of S.entries) m.set(e.day, (m.get(e.day) || 0) + 1);
   return m;
 }
-function streak(id, c) {
+function streak(c) {
   let d = today();
-  if (!c.get(id + "|" + d)) d = addDays(d, -1);
+  if (!c.get(d)) d = addDays(d, -1);
   let n = 0;
-  while (dayNo(d) >= 1 && c.get(id + "|" + d)) { n++; d = addDays(d, -1); }
+  while (dayNo(d) >= 1 && c.get(d)) { n++; d = addDays(d, -1); }
   return n;
 }
 const sizeText = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
@@ -116,15 +108,13 @@ function render() {
   const t = today();
   const days = dayList();
   const c = counts();
-  const ids = members().map(m => m.id);
   const nowNo = Math.min(Math.max(dayNo(t), 0), DAYS());
 
   if (S.config && S.config.title) document.title = S.config.title;
   $("range").textContent = S.config ? `${start()} → ${days[days.length - 1]}` : "불러오는 중…";
-  const done = ids.reduce((a, id) => a + days.filter(d => d <= t && c.get(id + "|" + d)).length, 0);
-  const possible = ids.length * nowNo;
+  const done = days.filter(d => d <= t && c.get(d)).length;
   $("progress").replaceChildren(
-    h("div", { class: "big" }, h("span", {}, h("b", {}, nowNo), `일차 / ${DAYS()}일`), h("span", {}, possible ? `팀 달성률 ${Math.round(done / possible * 100)}%` : "")),
+    h("div", { class: "big" }, h("span", {}, h("b", {}, nowNo), `일차 / ${DAYS()}일`), h("span", {}, nowNo ? `달성률 ${Math.round(done / nowNo * 100)}%` : "")),
     h("div", { class: "bar" }, h("i", { style: `width:${nowNo / DAYS() * 100}%` })));
 
   const notice = $("notice");
@@ -134,37 +124,31 @@ function render() {
 
   // 打卡墙
   const grid = $("grid");
-  const hr = h("tr", {}, h("th", { class: "who" }, "멤버"));
+  const hr = h("tr", {}, h("th", { class: "who" }));
   for (const d of days) {
     const cls = [d === t ? "today" : "", d === S.sel ? "sel" : ""].join(" ").trim() || null;
     hr.append(h("th", { class: cls, title: `${d} ${WEEK[parse(d).getDay()]}` }, h("b", {}, dayNo(d)), md(d)));
   }
-  const tb = h("tbody");
-  for (const id of ids) {
-    const nm = nameOf(id);
-    const total = days.filter(d => c.get(id + "|" + d)).length;
-    const tr = h("tr", {}, h("th", { class: "who" },
-      h("div", { class: "nm" }, h("span", { class: "dot", style: `background:${colorOf(id)}` }), h("span", {}, nm + (id === S.me ? " (나)" : ""))),
-      h("small", {}, `${total}일 · 연속 ${streak(id, c)}`)));
-    for (const d of days) {
-      const n = c.get(id + "|" + d) || 0;
-      let cls = "cell";
-      if (d > t) cls += " future";
-      else if (!n) cls += d < t ? " miss" : "";
-      else cls += n >= 3 ? " l3" : n === 2 ? " l2" : " l1";
-      if (id === S.me && d === t && !n) cls += " me-today";
-      tr.append(h("td", { class: d === S.sel ? "sel" : null },
-        h("button", { class: cls, title: `${nm} · ${d} · ${n}개`, "aria-label": `${nm} ${d} ${n}개`, onclick: () => select(d) }, n || "")));
-    }
-    tb.append(tr);
+  const total = days.filter(d => c.get(d)).length;
+  const tr = h("tr", {}, h("th", { class: "who" },
+    h("div", { class: "nm" }, "업로드"),
+    h("small", {}, `${total}일 · 연속 ${streak(c)}`)));
+  for (const d of days) {
+    const n = c.get(d) || 0;
+    let cls = "cell";
+    if (d > t) cls += " future";
+    else if (!n) cls += d < t ? " miss" : " me-today";
+    else cls += n >= 3 ? " l3" : n === 2 ? " l2" : " l1";
+    tr.append(h("td", { class: d === S.sel ? "sel" : null },
+      h("button", { class: cls, title: `${d} · ${n}개`, "aria-label": `${d} ${n}개`, onclick: () => select(d) }, n || "")));
   }
-  grid.replaceChildren(h("thead", {}, hr), tb);
+  grid.replaceChildren(h("thead", {}, hr), h("tbody", {}, tr));
 
-  renderDay(t, ids);
+  renderDay(t);
   renderSide(t);
 }
 
-function renderDay(t, ids) {
+function renderDay(t) {
   const main = $("dayMain");
   if (!S.sel) { main.replaceChildren(); return; }
   const sel = S.sel, no = dayNo(sel), d = parse(sel);
@@ -176,16 +160,8 @@ function renderDay(t, ids) {
     h("div", { class: "nav" },
       h("button", { class: "btn", disabled: no <= 1, onclick: () => select(addDays(sel, -1)) }, "← 이전 날"),
       h("button", { class: "btn", disabled: no >= DAYS(), onclick: () => select(addDays(sel, 1)) }, "다음 날 →")))];
-  if (!list.length) kids.push(h("p", { class: "empty" }, sel > t ? "아직 오지 않은 날이에요." : "이 날은 아직 아무도 올리지 않았어요."));
-  for (const id of ids) {
-    const mine = list.filter(e => e.member === id);
-    if (!mine.length) continue;
-    kids.push(h("div", { class: "group" },
-      h("h3", {}, h("span", { class: "dot", style: `background:${colorOf(id)}` }), nameOf(id), h("em", {}, `${mine.length}개`)),
-      h("div", { class: "files" }, mine.map(fileCard))));
-  }
-  const lazy = ids.filter(id => !list.some(e => e.member === id));
-  if (list.length && lazy.length && sel <= t) kids.push(h("p", { class: "missing" }, "아직 안 올린 사람: " + lazy.map(nameOf).join(", ")));
+  if (!list.length) kids.push(h("p", { class: "empty" }, sel > t ? "아직 오지 않은 날이에요." : "이 날은 아직 아무것도 올라오지 않았어요."));
+  else kids.push(h("div", { class: "files" }, list.map(fileCard)));
   main.replaceChildren(...kids);
 }
 
@@ -213,7 +189,7 @@ function fileCard(e) {
     thumb = h("a", { class: "thumb", href, target: "_blank", rel: "noopener" }, h("span", { class: "ext" }, ext));
   }
   const late = e.time && fmt(new Date(e.time)) > e.day;
-  const del = e.member === S.me ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제") : null;
+  const del = S.mine.has(e.id) ? h("button", { class: "del", type: "button", onclick: ev => removeEntry(e, ev.currentTarget) }, "삭제") : null;
   return h("div", { class: "file" }, thumb,
     h("div", { class: "meta" },
       h("a", { href, target: "_blank", rel: "noopener" }, e.name || "이름 없음"),
@@ -226,19 +202,9 @@ function fileCard(e) {
 }
 
 function renderSide(t) {
-  const logged = !!S.me;
-  $("loginForm").hidden = logged || !S.config;
-  $("uploader").hidden = !logged;
-  const sel = $("memberSelect");
-  if (!logged && S.config && sel.options.length !== members().length + 1) {
-    sel.replaceChildren(h("option", { value: "" }, "이름을 선택하세요"), ...members().map(m => h("option", { value: m.id }, m.name)));
-  }
-  if (logged) {
-    $("whoami").textContent = `현재: ${nameOf(S.me)}`;
-    const no = S.sel ? dayNo(S.sel) : 0;
-    $("upTitle").textContent = S.sel === t ? "오늘 올리기" : S.sel > t ? "아직 오지 않은 날이에요" : `Day ${no}에 늦게 제출`;
-    $("submitBtn").disabled = S.busy || !S.sel || S.sel > t;
-  }
+  const no = S.sel ? dayNo(S.sel) : 0;
+  $("upTitle").textContent = S.sel === t ? "오늘 올리기" : S.sel > t ? "아직 오지 않은 날이에요" : `Day ${no}에 늦게 제출`;
+  $("submitBtn").disabled = S.busy || !S.sel || S.sel > t;
 }
 
 function select(d) {
@@ -316,14 +282,16 @@ async function submit() {
       const th = await makeThumb(f);
       const thumbSha = th ? (await api("/blob", await blobBody(th))).sha : null;
       const ext = (f.name.includes(".") ? f.name.split(".").pop() : "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
-      const res = await api("/commit", JSON.stringify({ action: "add", kind: "file", member: S.me, day, name: f.name, type: f.type, size: f.size, ext, note, fileSha, thumbSha }));
+      const res = await api("/commit", JSON.stringify({ action: "add", kind: "file", day, name: f.name, type: f.type, size: f.size, ext, note, fileSha, thumbSha }));
+      S.mine.add(res.entry.id); saveMine();
       applyManifest(res.manifest);
       ok++;
     }
     if (link) {
       let name = link;
       try { const u = new URL(link); name = u.hostname + u.pathname.replace(/\/$/, ""); } catch {}
-      const res = await api("/commit", JSON.stringify({ action: "add", kind: "link", member: S.me, day, url: link, name, note }));
+      const res = await api("/commit", JSON.stringify({ action: "add", kind: "link", day, url: link, name, note }));
+      S.mine.add(res.entry.id); saveMine();
       applyManifest(res.manifest);
       ok++;
     }
@@ -346,23 +314,12 @@ async function removeEntry(e, btn) {
   btn.disabled = true; btn.textContent = "삭제 중…";
   try {
     const res = await api("/commit", JSON.stringify({ action: "delete", id: e.id }));
+    S.mine.delete(e.id); saveMine();
     applyManifest(res.manifest);
   } catch (err) {
     btn.disabled = false; btn.textContent = errText(err);
   }
 }
-
-// ---------- 选身份 ----------
-function login(ev) {
-  ev.preventDefault();
-  const me = $("memberSelect").value;
-  const st = $("loginStatus");
-  if (!me) { st.textContent = "먼저 이름을 선택하세요."; st.className = "status err"; return; }
-  st.textContent = "";
-  S.me = me; saveLogin();
-  render();
-}
-function logout() { S.me = null; saveLogin(); render(); }
 
 // ---------- 事件 ----------
 const drop = $("drop"), fileInput = $("fileInput");
@@ -382,11 +339,9 @@ drop.addEventListener("drop", e => {
 });
 fileInput.addEventListener("change", showPicked);
 $("submitBtn").addEventListener("click", submit);
-$("loginForm").addEventListener("submit", login);
-$("logoutBtn").addEventListener("click", logout);
 // 回到页面时刷新一次，看到别人新传的
 document.addEventListener("visibilitychange", () => { if (!document.hidden && !S.busy) loadManifest(); });
 
-loadLogin();
+loadMine();
 render();
 loadManifest();
