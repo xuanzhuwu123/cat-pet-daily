@@ -130,6 +130,17 @@
    "type": "video/mp4",
    "size": 3232369,
    "path": "daily/2026-10-03/museymi1dabu.mp4"
+  },
+  {
+   "id": "muuqp5g6rhk2",
+   "day": "2026-10-04",
+   "note": "",
+   "time": "2026-10-05T04:18:28.950Z",
+   "kind": "file",
+   "name": "7镜头.mp4",
+   "type": "video/mp4",
+   "size": 2056539,
+   "path": "daily/2026-10-04/muuqp5g6rhk2.mp4"
   }
  ]
 }
