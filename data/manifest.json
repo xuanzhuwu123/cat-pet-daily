@@ -141,6 +141,17 @@
    "type": "video/mp4",
    "size": 2056539,
    "path": "daily/2026-10-04/muuqp5g6rhk2.mp4"
+  },
+  {
+   "id": "muuqrhz08242",
+   "day": "2026-10-05",
+   "note": "",
+   "time": "2026-10-05T04:20:18.492Z",
+   "kind": "file",
+   "name": "8镜头.mp4",
+   "type": "video/mp4",
+   "size": 2359931,
+   "path": "daily/2026-10-05/muuqrhz08242.mp4"
   }
  ]
 }
