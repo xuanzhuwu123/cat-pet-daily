@@ -174,6 +174,17 @@
    "type": "video/mp4",
    "size": 1537975,
    "path": "daily/2026-10-07/muz5egs77vol.mp4"
+  },
+  {
+   "id": "muz5eueyp5ff",
+   "day": "2026-10-08",
+   "note": "",
+   "time": "2026-10-08T06:21:27.034Z",
+   "kind": "file",
+   "name": "11.mp4",
+   "type": "video/mp4",
+   "size": 2487787,
+   "path": "daily/2026-10-08/muz5eueyp5ff.mp4"
   }
  ]
 }
