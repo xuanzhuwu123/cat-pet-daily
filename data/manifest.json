@@ -185,6 +185,17 @@
    "type": "video/mp4",
    "size": 2487787,
    "path": "daily/2026-10-08/muz5eueyp5ff.mp4"
+  },
+  {
+   "id": "mv0x38xstth6",
+   "day": "2026-10-09",
+   "note": "",
+   "time": "2026-10-09T12:04:01.408Z",
+   "kind": "file",
+   "name": "12.mp4",
+   "type": "video/mp4",
+   "size": 1639182,
+   "path": "daily/2026-10-09/mv0x38xstth6.mp4"
   }
  ]
 }
