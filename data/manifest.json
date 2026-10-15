@@ -251,6 +251,17 @@
    "type": "video/mp4",
    "size": 2019408,
    "path": "daily/2026-10-14/mv839e915uoe.mp4"
+  },
+  {
+   "id": "mv9b2j7bwxa0",
+   "day": "2026-10-15",
+   "note": "",
+   "time": "2026-10-15T08:57:32.087Z",
+   "kind": "file",
+   "name": "18.mp4",
+   "type": "video/mp4",
+   "size": 1246120,
+   "path": "daily/2026-10-15/mv9b2j7bwxa0.mp4"
   }
  ]
 }
