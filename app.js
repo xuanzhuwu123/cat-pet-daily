@@ -5,7 +5,7 @@ const THUMB_PX = 480;
 const WEEK = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 const RAW_BASE = `https://raw.githubusercontent.com/${REPO}/${BRANCH}/`;
 
-const S = { config: null, entries: [], view: null, filter: "all", mine: new Set(), busy: false, error: "" };
+const S = { config: null, entries: [], view: null, filter: "all", pastOpen: false, mine: new Set(), busy: false, error: "" };
 const $ = id => document.getElementById(id);
 
 // ---------- 本机上传过的记录（只能删除自己在这台设备上传的） ----------
@@ -34,6 +34,8 @@ const dayOf = no => addDays(start(), no - 1);
 const md = s => { const d = parse(s); return `${d.getMonth() + 1}월 ${d.getDate()}일`; };
 const longDate = s => `${md(s)} ${WEEK[parse(s).getDay()]}`;
 const epLabel = no => `EP.${pad(no)}`;
+// 第 1–21 天是期中《데스크톱 펫의 탈출》，第 22 天起是期末的记录
+const FINAL_FROM = 22;
 
 // ---------- DOM 小工具（用户内容一律走 textContent） ----------
 function h(tag, props, ...kids) {
@@ -94,7 +96,6 @@ const itemsOf = d => S.entries.filter(e => e.day === d).sort(byTime);
 const coverOf = list => list[0];
 const captionOf = list => (list.find(e => e.note) || {}).note || "";
 const openDays = () => dayList().filter(d => d <= today() && S.entries.some(e => e.day === d));
-const latestDay = () => openDays().pop() || null;
 
 const sizeText = b => b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
 const isImg = e => e.kind !== "link" && (e.type || "").startsWith("image/");
@@ -137,14 +138,12 @@ function media(e) {
 // ---------- 渲染 ----------
 function render() {
   const t = today();
-  if (S.config && S.config.title) document.title = S.config.title;
 
   const notice = $("notice");
   notice.hidden = !S.error;
   notice.textContent = S.error;
 
   renderOnAir(t);
-  renderFeature();
   renderEpisodes(t);
   renderStudioDays(t);
   if ($("viewer").open) renderViewer();
@@ -155,96 +154,71 @@ function renderOnAir(t) {
   if (!S.config) { el.textContent = "불러오는 중…"; return; }
   const no = dayNo(t), n = openDays().length;
   el.replaceChildren();
-  if (no < 1) el.append(h("b", {}, `D-${1 - no}`), ` ${md(start())}에 1화가 시작돼요`);
-  else if (no > DAYS()) el.append(h("b", {}, "완결"), ` 전체 ${n}화 공개`);
-  else el.append(h("i", { class: "live" }), h("b", {}, `${no}일째 탈출 중`), ` · 지금까지 ${n}화 공개`);
-}
-
-let featSig = "";
-function renderFeature() {
-  const box = $("feature");
-  const d = latestDay();
-  const list = d ? itemsOf(d) : [];
-  const sig = d + "|" + list.map(e => e.id).join(",");
-  if (sig === featSig) return;
-  featSig = sig;
-  if (!d) {
-    box.replaceChildren(h("div", { class: "feature-empty" },
-      h("div", { class: "fe-cat", "aria-hidden": "true" }),
-      h("h3", {}, "첫 번째 탈출 시도를 준비하고 있어요"),
-      h("p", {}, "고양이가 아직 모니터 안에서 기지개를 켜는 중이에요. 곧 1화가 공개돼요.")));
-    return;
-  }
-  const no = dayNo(d), cover = coverOf(list), cap = captionOf(list);
-  let visual;
-  if (isImg(cover)) visual = bigImage(cover);
-  else if (isVid(cover)) {
-    // 最新一话静音循环自动播放，点控制条可开声音
-    visual = bigVideo(cover);
-    Object.assign(visual, { muted: true, autoplay: true, loop: true });
-    visual.setAttribute("muted", "");
-  }
-  else visual = smallCover(cover);
-  box.replaceChildren(
-    h("div", { class: "feature-media" + (isImg(cover) || isVid(cover) ? "" : " plain") }, visual),
-    h("div", { class: "feature-text" },
-      h("p", { class: "ft-ep" }, h("span", {}, epLabel(no)), d === today() ? h("em", {}, "NEW") : null),
-      h("h3", {}, longDate(d)),
-      cap ? h("p", { class: "ft-cap" }, cap) : h("p", { class: "ft-cap muted" }, "오늘의 탈출 기록을 확인해 보세요."),
-      h("div", { class: "ft-actions" },
-        h("button", { class: "btn primary big", type: "button", onclick: () => openViewer(d) },
-          list.length > 1 ? `${list.length}개 모두 보기` : "자세히 보기"),
-        no > 1 ? h("button", { class: "btn ghost big", type: "button", onclick: () => openViewer(prevOpen(d) || dayOf(1)) }, "지난 화") : null)));
+  if (no < 1) el.append(h("b", {}, `D-${1 - no}`), ` ${md(start())}에 첫 기록이 올라와요`);
+  else if (no > DAYS()) el.append(h("b", {}, "완결"), ` 전체 ${n}일의 기록`);
+  else el.append(h("i", { class: "live" }), h("b", {}, `${no}일째 기록 중`), ` · 지금까지 ${n}일 공개`);
 }
 
 function renderEpisodes(t) {
   const days = dayList();
   const nOpen = openDays().length;
-  $("fAll").textContent = `전체 ${days.length}화`;
-  $("fOpen").textContent = `공개된 화 ${nOpen}`;
+  $("fAll").textContent = `전체 ${days.length}일`;
+  $("fOpen").textContent = `공개된 날 ${nOpen}`;
   const shown = S.filter === "open" ? days.filter(d => d <= t && S.entries.some(e => e.day === d)) : days;
   if (!shown.length) {
-    $("eps").replaceChildren(h("p", { class: "empty" }, "아직 공개된 에피소드가 없어요. 조금만 기다려 주세요!"));
+    $("eps").replaceChildren(h("p", { class: "empty" }, "아직 공개된 기록이 없어요."));
     return;
   }
-  $("eps").replaceChildren(...shown.map((d, i) => epCard(d, t, i)));
+  // 期末的记录放前面；期中的记录折叠在后面
+  const now = shown.filter(d => dayNo(d) >= FINAL_FROM);
+  const past = shown.filter(d => dayNo(d) < FINAL_FROM);
+  const kids = [];
+  if (now.length) kids.push(h("div", { class: "chapter now" },
+    h("p", { class: "ch-no" }, `EP.${pad(FINAL_FROM)}–${pad(DAYS())}`),
+    h("h3", {}, "귤이가 찾아준 집"),
+    h("p", { class: "ch-sub" }, "기말 작품의 제작 기록")), ...now.map((d, i) => epCard(d, t, i)));
+  if (past.length) {
+    kids.push(h("button", { class: "chapter past" + (S.pastOpen ? " opened" : ""), type: "button", "aria-expanded": String(S.pastOpen),
+        onclick: () => { S.pastOpen = !S.pastOpen; renderEpisodes(today()); } },
+      h("span", { class: "ch-no" }, `EP.01–${pad(FINAL_FROM - 1)} · 중간 작품`),
+      h("span", { class: "ch-title" }, "데스크톱 펫의 탈출"),
+      h("span", { class: "ch-toggle" }, S.pastOpen ? "접기" : `펼치기 · ${past.filter(d => itemsOf(d).length).length}일의 기록`)));
+    if (S.pastOpen) kids.push(...past.map((d, i) => epCard(d, t, i)));
+  }
+  $("eps").replaceChildren(...kids);
+}
+
+// 撕页日历的日期：大号的日 + 月和星期
+function sheetDate(d) {
+  const x = parse(d);
+  return [h("span", { class: "sd-day" }, String(x.getDate())),
+    h("span", { class: "sd-meta" }, `${x.getMonth() + 1}월 · ${WEEK[x.getDay()][0]}`)];
 }
 
 function epCard(d, t, i) {
   const no = dayNo(d), list = d <= t ? itemsOf(d) : [];
   const style = `--i:${i}`;
-  if (d > t) {
-    return h("div", { class: "ep locked", style },
-      h("div", { class: "cover" }, h("span", { class: "cv-lock" }, `D-${diff(d, t)}`)),
-      h("div", { class: "info" }, h("p", { class: "ep-no" }, epLabel(no), h("span", {}, md(d))), h("p", { class: "ep-cap" }, "공개 예정")));
-  }
+  const past = no < FINAL_FROM ? " past" : "";
+  // 还没撕的纸：未来、今天还没上传、过去没有记录
   if (!list.length) {
-    const isToday = d === t;
-    return h("div", { class: "ep " + (isToday ? "soon" : "quiet"), style },
-      h("div", { class: "cover" }, isToday
-        ? h("span", { class: "cv-soon" }, h("i", { class: "live" }), "오늘 공개 예정")
-        : pawSvg()),
-      h("div", { class: "info" }, h("p", { class: "ep-no" }, epLabel(no), h("span", {}, md(d))),
-        h("p", { class: "ep-cap" }, isToday ? "곧 올라와요" : "쉬어 가는 날")));
+    const kind = d > t ? "locked" : d === t ? "soon" : "quiet";
+    const foot = kind === "locked" ? `D-${diff(d, t)}`
+      : kind === "soon" ? h("span", {}, h("i", { class: "live" }), "오늘") : "기록 없음";
+    return h("div", { class: `ep ${kind}${past}`, style },
+      h("span", { class: "rings" }),
+      h("div", { class: "sheet-face" }, ...sheetDate(d)),
+      h("p", { class: "sheet-foot" }, h("b", {}, epLabel(no)), foot));
   }
+  // 撕掉了的纸：露出这一天的画面
   const cover = coverOf(list), cap = captionOf(list);
-  const card = h("button", { class: "ep open" + (d === t ? " new" : ""), style, type: "button",
+  return h("button", { class: "ep open" + (d === t ? " new" : "") + past, style, type: "button",
       "aria-label": `${epLabel(no)} ${longDate(d)} 보기`, onclick: () => openViewer(d) },
-    h("div", { class: "cover" }, smallCover(cover),
-      list.length > 1 ? h("span", { class: "cv-count" }, `+${list.length - 1}`) : null,
-      d === t ? h("span", { class: "cv-new" }, "NEW") : null),
-    h("div", { class: "info" }, h("p", { class: "ep-no" }, epLabel(no), h("span", {}, md(d))),
-      h("p", { class: "ep-cap" }, cap || "기록 보기")));
-  return card;
-}
-// 空的过去日子里放一个猫爪
-function pawSvg() {
-  const NS = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(NS, "svg"), use = document.createElementNS(NS, "use");
-  svg.setAttribute("class", "cv-paw"); svg.setAttribute("aria-hidden", "true");
-  use.setAttribute("href", "#paw");
-  svg.append(use);
-  return svg;
+    h("span", { class: "rings" }),
+    h("span", { class: "tear" }),
+    h("div", { class: "cover" }, smallCover(cover)),
+    list.length > 1 ? h("span", { class: "cv-count" }, `+${list.length - 1}`) : null,
+    d === t ? h("span", { class: "cv-new" }, "NEW") : null,
+    h("div", { class: "label" }, ...sheetDate(d), h("p", { class: "ep-no" }, epLabel(no)), h("p", { class: "ep-cap" }, cap)));
 }
 
 // ---------- 观看弹窗 ----------
@@ -276,7 +250,7 @@ function renderViewer() {
   $("vTitle").textContent = longDate(d);
   const body = $("vBody");
   if (!list.length) {
-    body.replaceChildren(h("p", { class: "empty" }, d > t ? "아직 공개되지 않은 에피소드예요." : "이 날은 기록이 없어요."));
+    body.replaceChildren(h("p", { class: "empty" }, d > t ? "아직 공개되지 않은 날이에요." : "이 날은 기록이 없어요."));
     return;
   }
   body.replaceChildren(...list.map((e, i) => h("figure", { class: "item", style: `--i:${i}` },
@@ -458,14 +432,6 @@ $("viewer").addEventListener("keydown", e => {
   if (e.key === "ArrowRight") $("vNext").click();
 });
 
-$("ctaLatest").addEventListener("click", () => {
-  const d = latestDay();
-  if (d) openViewer(d); else $("latest").scrollIntoView({ behavior: "smooth" });
-});
-$("ctaFirst").addEventListener("click", () => {
-  const d = openDays()[0];
-  if (d) openViewer(d); else $("episodes").scrollIntoView({ behavior: "smooth" });
-});
 document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
   S.filter = c.dataset.filter;
   document.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", x === c));
