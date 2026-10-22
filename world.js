@@ -200,22 +200,30 @@ addEventListener("resize", demolish);
 demolish();
 
 // ---------- 灯光：缓动跟随鼠标；没有鼠标的设备在画面里慢慢漂 ----------
-const L = { x: innerWidth * 0.72, y: innerHeight * 0.62, tx: innerWidth * 0.72, ty: innerHeight * 0.62, r: 0, tr: 0 };
+// 只改 transform（交给合成器），不改样式变量，所以移动灯光时线稿不需要重画
+const lens = document.getElementById("lens"), glow = document.getElementById("cursorLight");
+const L = { x: innerWidth * 0.72, y: innerHeight * 0.62, tx: innerWidth * 0.72, ty: innerHeight * 0.62, r: 270 };
 const gaze = document.getElementById("gaze");
 const cat = document.querySelector(".cat");
 let lightOn = false, raf = 0;
 
+function sizeLight() {
+  L.r = innerWidth < 700 ? 150 : 270;
+  lens.style.width = lens.style.height = `${L.r * 2}px`;
+  glow.style.width = glow.style.height = `${L.r * 3}px`;
+}
+
 function setLight() {
-  root.style.setProperty("--lx", `${L.x.toFixed(1)}px`);
-  root.style.setProperty("--ly", `${L.y.toFixed(1)}px`);
-  root.style.setProperty("--lr", `${L.r.toFixed(1)}px`);
+  lens.style.transform = `translate3d(${(L.x - L.r).toFixed(1)}px,${(L.y - L.r).toFixed(1)}px,0)`;
+  townLit.style.transform = `translate3d(${(L.r - L.x).toFixed(1)}px,${(L.r - L.y).toFixed(1)}px,0)`;
+  glow.style.transform = `translate3d(${(L.x - L.r * 1.5).toFixed(1)}px,${(L.y - L.r * 1.5).toFixed(1)}px,0)`;
 }
 
 function look() {
-  // 猫的眼睛往灯光的方向看，最多偏 2.6 个单位
+  // 猫的眼睛往灯光的方向看，最多偏 2.6 个单位（先读位置再写，避免强制重排）
   if (!gaze || !cat) return;
   const b = cat.getBoundingClientRect();
-  if (b.bottom < 0) return;
+  if (b.bottom < 0 || b.top > innerHeight) return;
   const dx = L.x - (b.left + b.width * 0.45), dy = L.y - (b.top + b.height * 0.22);
   const d = Math.hypot(dx, dy) || 1, m = Math.min(1, d / 260) * 2.6;
   gaze.setAttribute("transform", `translate(${(dx / d * m).toFixed(2)} ${(dy / d * m).toFixed(2)})`);
@@ -228,28 +236,44 @@ function tick(t) {
   }
   L.x += (L.tx - L.x) * 0.09;
   L.y += (L.ty - L.y) * 0.09;
-  L.r += (L.tr - L.r) * 0.06;
-  setLight();
   look();
-  raf = document.hidden ? 0 : requestAnimationFrame(tick);
+  setLight();
+  // 鼠标停下、灯也追上以后就不再每帧计算，等下一次移动
+  const settled = finePointer && Math.abs(L.tx - L.x) + Math.abs(L.ty - L.y) < 0.5;
+  raf = document.hidden || settled ? 0 : requestAnimationFrame(tick);
 }
+const kick = () => { if (lightOn && !raf && !reduce) raf = requestAnimationFrame(tick); };
 
 function turnOnLight() {
   if (lightOn) return;
   lightOn = true;
-  L.tr = innerWidth < 700 ? 190 : 270;
-  if (reduce) { L.r = L.tr; setLight(); return; }
-  if (!raf) raf = requestAnimationFrame(tick);
+  root.classList.add("light-on");
+  if (reduce) { setLight(); look(); return; }
+  kick();
 }
 
 if (finePointer) {
   addEventListener("pointermove", e => {
     L.tx = e.clientX; L.ty = e.clientY;
-    if (reduce) { L.x = L.tx; L.y = L.ty; setLight(); look(); }
+    if (reduce) { L.x = L.tx; L.y = L.ty; setLight(); look(); } else kick();
   }, { passive: true });
 }
-document.addEventListener("visibilitychange", () => { if (!document.hidden && lightOn && !reduce && !raf) raf = requestAnimationFrame(tick); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) kick(); });
+addEventListener("resize", () => { sizeLight(); setLight(); });
+sizeLight();
 setLight();
+
+// 窄屏上把달동네缩小一些：加高 viewBox，让街区只占画面底部
+let fitW = 0;
+function fitTown() {
+  if (innerWidth === fitW) return;   // 手机滚动时地址栏伸缩只改高度，不重新排
+  fitW = innerWidth;
+  const s = innerWidth < 700 ? 0.6 : 1;
+  const vbH = Math.max(900, townEl.clientHeight / s);
+  for (const svg of document.querySelectorAll(".town svg")) svg.setAttribute("viewBox", `0 ${(900 - vbH).toFixed(0)} 1600 ${vbH.toFixed(0)}`);
+}
+fitTown();
+addEventListener("resize", fitTown);
 
 // ---------- 开场 ----------
 const intro = document.getElementById("intro");
@@ -289,11 +313,12 @@ const INTERACTIVE = "a,button,input,textarea,select,label,video,dialog,.ep,.shee
 let hoverWin = -1;
 
 function darkWindowAt(x, y) {
+  const tol = finePointer ? 6 : 16;   // 手指比鼠标粗，放宽一点
   for (let i = 0; i < lights.length; i++) {
     const el = lights[i][0];
     if (!el.classList.contains("off") || relit.has(i)) continue;
     const b = el.getBoundingClientRect();
-    if (x > b.left - 6 && x < b.right + 6 && y > b.top - 6 && y < b.bottom + 6) return i;
+    if (x > b.left - tol && x < b.right + tol && y > b.top - tol && y < b.bottom + tol) return i;
   }
   return -1;
 }

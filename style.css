@@ -16,7 +16,7 @@
   --thin:"IBM Plex Mono","IBM Plex Sans KR",var(--mono);
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-snap-type:y proximity;background:var(--bg)}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;background:var(--bg);overflow-x:hidden}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.7;font-weight:400;word-break:keep-all;overflow-wrap:anywhere;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 img{max-width:100%}
 [hidden]{display:none!important}
@@ -49,11 +49,11 @@ a{color:inherit}
 .btn.primary:hover:not(:disabled){background:var(--lamp-hi);border-color:var(--lamp-hi)}
 
 /* ---------- 首屏 ---------- */
-.rain{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.rain{position:fixed;left:0;top:0;z-index:0;pointer-events:none}
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(110% 70% at 75% 0%,#121821 0%,rgba(10,12,16,0) 60%)}
 
 /* ---------- 世界观层：달동네线稿、灯光、暗角、颗粒 ---------- */
-.town{position:fixed;inset:0;z-index:0;pointer-events:none;color:rgba(143,166,191,.11)}
+.town{position:fixed;left:0;top:0;width:100%;height:100vh;height:100lvh;z-index:0;pointer-events:none;color:rgba(143,166,191,.11)}
 .town svg{width:100%;height:100%;display:block}
 .town rect,.town path{fill:var(--bg);stroke:currentColor;stroke-width:1;vector-effect:non-scaling-stroke}
 .town .wire,.town .stair{fill:none}
@@ -62,9 +62,12 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;bac
 .town .win{fill:none}
 .town .win.lit{fill:rgba(226,162,91,.22);stroke:none}
 /* 被灯照到的那一圈：同一张线稿，换成暖色，用遮罩只露出光照范围 */
-.town.lit{color:rgba(240,190,130,.4);
-  -webkit-mask-image:radial-gradient(circle var(--lr,0px) at var(--lx,70%) var(--ly,60%),#000 0,rgba(0,0,0,.55) 45%,transparent 100%);
-  mask-image:radial-gradient(circle var(--lr,0px) at var(--lx,70%) var(--ly,60%),#000 0,rgba(0,0,0,.55) 45%,transparent 100%)}
+/* 镜头：圆形、边缘渐隐的静态遮罩；整个镜头用 transform 移动，里面的线稿反向移动，看起来就像灯在照 */
+.lens{position:fixed;left:0;top:0;z-index:0;border-radius:50%;overflow:hidden;pointer-events:none;will-change:transform;opacity:0;transition:opacity 1.6s var(--ease);
+  -webkit-mask-image:radial-gradient(circle closest-side,#000 0,rgba(0,0,0,.55) 45%,transparent 100%);
+  mask-image:radial-gradient(circle closest-side,#000 0,rgba(0,0,0,.55) 45%,transparent 100%)}
+html.light-on .lens,html.light-on .cursor-light{opacity:1}
+.lens .town.lit{position:absolute;width:100vw;will-change:transform;color:rgba(240,190,130,.4)}
 .town.lit .win.lit{fill:rgba(240,190,130,.85)}
 /* 熄灯：闪一下再灭 */
 .town .win.lit{transition:opacity .2s}
@@ -99,7 +102,7 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;bac
 #town .win.lit.relit{fill:rgba(240,190,130,.55)}
 html.over-win,html.over-win body{cursor:pointer}
 .town .dong{fill:rgba(143,166,191,.35);stroke:none;font-family:var(--mono);font-size:8px;text-anchor:middle;letter-spacing:.08em}
-.cursor-light{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle calc(var(--lr,0px) * 1.5) at var(--lx,70%) var(--ly,60%),rgba(226,162,91,.09),rgba(226,162,91,0) 100%)}
+.cursor-light{position:fixed;left:0;top:0;z-index:0;border-radius:50%;pointer-events:none;will-change:transform;opacity:0;transition:opacity 1.6s var(--ease);background:radial-gradient(circle closest-side,rgba(226,162,91,.09),rgba(226,162,91,0))}
 .vignette{position:fixed;inset:0;z-index:45;pointer-events:none;background:radial-gradient(ellipse 95% 85% at 50% 45%,transparent 60%,rgba(0,0,0,.45) 100%)}
 .grain{position:fixed;inset:-50%;z-index:55;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
@@ -139,15 +142,15 @@ html.intro .sound{opacity:0}
 .intro-skip{position:absolute;right:24px;bottom:24px;pointer-events:auto;border:0;background:none;color:var(--muted);font-size:12px;letter-spacing:.06em;cursor:pointer}
 .intro-skip:hover{color:var(--text)}
 html.intro{overflow:hidden}
-html.intro .page,html.intro .topnav,html.intro .pager,html.intro .cursor-light,html.intro .town.lit{opacity:0}
+html.intro .page,html.intro .topnav,html.intro .pager{opacity:0}
 html.intro .rise{animation:none;opacity:0}
-.topnav,.pager,.cursor-light,.town.lit{transition:opacity 1.4s var(--ease) .6s}
+.topnav,.pager{transition:opacity 1.4s var(--ease) .6s}
 /* 台灯闪两下再亮 */
 html.lamp-on .hero{animation:flicker 1s linear both}
 
 /* ---------- 一页一屏，向下翻页 ---------- */
-.page{position:relative;z-index:1;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:110px 16px 110px;scroll-snap-align:start}
-.page-inner{width:100%;max-width:1180px;margin:0 auto;transform-origin:50% 100%;will-change:transform,opacity}
+.page{position:relative;z-index:1;min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:110px 16px 110px}
+.page-inner{width:100%;max-width:1180px;margin:0 auto;transform-origin:50% 100%}
 #episodes{justify-content:flex-start;padding-bottom:140px}
 .lamp-glow{position:absolute;right:8%;top:18%;width:min(56vw,640px);aspect-ratio:1;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(226,162,91,.16),rgba(226,162,91,.05) 40%,rgba(226,162,91,0) 70%)}
 .next{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;text-decoration:none;font-size:11.5px;letter-spacing:.08em;color:var(--muted);transition:color .3s}
@@ -335,7 +338,7 @@ button.ep{cursor:pointer}
   .pager{display:none}
   .sound{bottom:12px}
   .hero-inner{grid-template-columns:1fr;gap:24px}
-  .desk{max-width:340px;justify-self:start}
+  .desk{max-width:210px;justify-self:center;margin-top:8px}
   .lamp-glow{right:-20%;top:auto;bottom:0}
   .context{grid-template-columns:1fr;gap:8px}
   .left-behind{grid-template-columns:1fr}
@@ -350,6 +353,14 @@ button.ep{cursor:pointer}
   .v-title h2{font-size:14px}
 }
 @media (max-width:520px){
+  .studio-link{display:none}
+  .page{padding-top:84px;padding-bottom:96px}
+  h1{font-size:clamp(40px,12vw,56px)}
+  .sound{font-size:0;padding:0;width:34px;height:34px;display:grid;place-items:center}
+  .sound::before{display:none}
+  .sound::after{content:"♪";font-size:14px;line-height:1}
+  /* 正文压在线稿上时加一层暗影，保证读得清 */
+  .ctx-body p,.left-behind span,.left-behind b{text-shadow:0 0 10px var(--bg),0 0 4px var(--bg)}
   .links a{padding:6px 7px;font-size:12.5px}
   .links a[data-sec=latest]{display:none}
   .brand{font-size:14px}
@@ -386,6 +397,20 @@ button.ep{cursor:pointer}
   .item{animation:cardIn .5s var(--ease) both;animation-delay:calc(var(--i,0) * 70ms)}
   .sheet[open]{animation:cardIn .3s var(--ease)}
 }
+/* 触屏设备：省掉耗性能的效果 */
+@media (pointer:coarse){
+  .grain{animation:none!important}
+  .topnav.scrolled,.sound{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(10,12,16,.94)}
+  .cv-play b{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+/* 翻页：支持滚动驱动动画的浏览器交给浏览器自己做（不占主线程）；其他浏览器在 ui.js 里用 JS 做 */
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion:no-preference){
+    .page{view-timeline:--page block}
+    #top .page-inner,#context .page-inner{animation:turnAway linear both;animation-timeline:--page;animation-range:exit 0% exit 100%}
+  }
+}
+@keyframes turnAway{to{transform:perspective(1400px) rotateX(14deg) scale(.88) translateY(-6vh);opacity:.1}}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation:none!important;transition:none!important}

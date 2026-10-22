@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;900&family=JetBrains+Mono:wght@400;600&family=IBM+Plex+Mono:wght@200;300&family=IBM+Plex+Sans+KR:wght@200;300&display=swap">
-<link rel="stylesheet" href="style.css?v=20261023">
-<script type="module" src="app.js?v=20261023"></script>
-<script type="module" src="ui.js?v=20261023"></script>
-<script type="module" src="world.js?v=20261023"></script>
+<link rel="stylesheet" href="style.css?v=20261023b">
+<script type="module" src="app.js?v=20261023b"></script>
+<script type="module" src="ui.js?v=20261023b"></script>
+<script type="module" src="world.js?v=20261023b"></script>
 <!-- 第一次进入才播放开场；直接打开某一天或上传页时跳过；网址加 ?intro 可以重看 -->
 <script>
 try {
@@ -25,8 +25,9 @@ try {
 <body>
 <!-- 雨铺满整个页面，翻页时一直在下 -->
 <div class="town" id="town" aria-hidden="true"></div>
-<div class="town lit" id="townLit" aria-hidden="true"></div>
-<div class="cursor-light" aria-hidden="true"></div>
+<!-- 灯光：一个只靠位移移动的圆形“镜头”，里面放一份暖色的线稿；移动时不需要重画 -->
+<div class="lens" id="lens" aria-hidden="true"><div class="town lit" id="townLit"></div></div>
+<div class="cursor-light" id="cursorLight" aria-hidden="true"></div>
 <canvas class="rain" id="rain" aria-hidden="true"></canvas>
 <div class="vignette" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
@@ -63,7 +64,7 @@ try {
     <div class="hero-text">
       <p class="eyebrow rise" style="--d:0">AI × UNREAL · FINAL PROJECT 《home》</p>
       <h1 class="rise" style="--d:1">귤이가<br>찾아준 <em>집</em></h1>
-      <p class="lead rise" style="--d:2">비가 그치기 전에,<br>귤이가 찾아야 할 것이 있어요.</p>
+      <p class="lead rise" style="--d:2">비가 그치기 전에, <br>귤이가 찾아야 할 것이 있어요.</p>
       <p class="onair rise" style="--d:3" id="onair">불러오는 중…</p>
       <div class="hero-cta rise" style="--d:4">
         <a class="btn primary big" href="#episodes">30일 기록 보기</a>

@@ -3,6 +3,9 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const bar = document.getElementById("scrollBar");
 const nav = document.getElementById("topnav");
 const pages = [...document.querySelectorAll(".page")];
+const finePointer = matchMedia("(pointer: fine)").matches;
+// 支持滚动驱动动画的浏览器在 CSS 里翻页；不支持的，只在有鼠标的设备上用 JS 翻页（触屏上跳过，保证流畅）
+const jsTurn = !reduce && finePointer && !(window.CSS && CSS.supports("animation-timeline: view()"));
 
 // 翻页：离开的那一页向后倒下去（以底边为轴后仰、缩小、变暗），下一页从下面盖上来
 function turnPages() {
@@ -14,7 +17,6 @@ function turnPages() {
     const k = r.height <= vh * 1.15 ? Math.min(1, Math.max(0, -r.top / vh)) : 0;
     inner.style.transform = k ? `perspective(1400px) rotateX(${k * 14}deg) scale(${1 - k * 0.12}) translateY(${k * -6}vh)` : "";
     inner.style.opacity = k ? String(1 - k * 0.9) : "";
-    inner.style.filter = k ? `blur(${k * 3}px)` : "";
   }
 }
 
@@ -26,12 +28,12 @@ function onScroll() {
     const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
     bar.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
     nav.classList.toggle("scrolled", y > 24);
-    if (!reduce) turnPages();
-    // 雨量：结尾页从下面升上来时，雨一点点停下
+    if (jsTurn) turnPages();
+    // 雨量：结尾页从下面升上来时，雨一点点停下（变化够大才写，少触发样式计算）
     const end = document.getElementById("end");
     if (end) {
-      const lvl = Math.min(1, Math.max(0, end.getBoundingClientRect().top / innerHeight));
-      document.documentElement.dataset.rain = lvl.toFixed(2);
+      const lvl = Math.min(1, Math.max(0, end.getBoundingClientRect().top / innerHeight)).toFixed(2);
+      if (document.documentElement.dataset.rain !== lvl) document.documentElement.dataset.rain = lvl;
     }
     ticking = false;
   });
@@ -48,11 +50,14 @@ if (cv && !reduce) {
   const drops = [];
   let w = 0, h = 0, raf = 0;
   function size() {
-    const dpr = Math.min(devicePixelRatio || 1, 2);
-    w = innerWidth; h = innerHeight;
+    // 手机滚动时地址栏伸缩只改高度：宽度没变、高度变化不大时不重建画布
+    if (innerWidth === w && Math.abs(innerHeight - h) < 160) return;
+    const dpr = finePointer ? Math.min(devicePixelRatio || 1, 2) : 1;
+    w = innerWidth; h = Math.max(innerHeight, screen.height && !finePointer ? Math.min(screen.height, innerHeight + 120) : innerHeight);
     cv.width = w * dpr; cv.height = h * dpr;
+    cv.style.width = `${w}px`; cv.style.height = `${h}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const n = Math.round(w * h / 9000);
+    const n = Math.round(w * h / (finePointer ? 9000 : 13000));
     drops.length = 0;
     for (let i = 0; i < n; i++) drops.push(drop(true));
   }
