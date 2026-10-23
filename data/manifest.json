@@ -284,6 +284,18 @@
    "type": "video/mp4",
    "size": 2494043,
    "path": "daily/2026-10-20/mvj5bygues9e.mp4"
+  },
+  {
+   "id": "mvk7nebengv4",
+   "day": "2026-10-20",
+   "note": "",
+   "time": "2026-10-23T00:07:15.002Z",
+   "kind": "file",
+   "name": "2_相遇.png",
+   "type": "image/png",
+   "size": 6512717,
+   "path": "daily/2026-10-20/mvk7nebengv4.png",
+   "thumb": "daily/2026-10-20/mvk7nebengv4.thumb.webp"
   }
  ]
 }
