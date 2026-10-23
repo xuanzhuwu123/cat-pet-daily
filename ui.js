@@ -64,18 +64,28 @@ if (cv && !reduce) {
   function drop(anywhere) {
     const z = Math.random();
     return { x: Math.random() * (w + 200) - 100, y: anywhere ? Math.random() * h : -40,
-      len: 10 + z * 22, v: 5 + z * 9, a: 0.05 + z * 0.16 };
+      len: 10 + z * 22, v: 5 + z * 9, b: Math.min(3, Math.floor(z * 4)) };
   }
-  function frame() {
+  // 雨滴按远近分四组，每组一次画完；移动距离按经过的时间算，掉帧时雨也不会变慢
+  const SHADES = [0.07, 0.11, 0.15, 0.2].map(a => `rgba(150,175,205,${a})`);
+  let last = 0;
+  function frame(t) {
+    const k = last ? Math.min(3, (t - last) / 16.67) : 1;
+    last = t;
     ctx.clearRect(0, 0, w, h);
     ctx.lineWidth = 1;
-    for (const d of drops) {
-      ctx.strokeStyle = `rgba(150,175,205,${d.a})`;
+    for (let b = 0; b < 4; b++) {
+      ctx.strokeStyle = SHADES[b];
       ctx.beginPath();
-      ctx.moveTo(d.x, d.y);
-      ctx.lineTo(d.x - d.len * 0.18, d.y + d.len);
+      for (const d of drops) {
+        if (d.b !== b) continue;
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d.x - d.len * 0.18, d.y + d.len);
+      }
       ctx.stroke();
-      d.y += d.v; d.x -= d.v * 0.18;
+    }
+    for (const d of drops) {
+      d.y += d.v * k; d.x -= d.v * 0.18 * k;
       if (d.y > h) {
         const lvl = Number(document.documentElement.dataset.rain || 1);
         if (Math.random() < lvl) Object.assign(d, drop(false));
@@ -84,6 +94,7 @@ if (cv && !reduce) {
       if (d.v === 0 && Math.random() < 0.01 * Number(document.documentElement.dataset.rain || 1)) Object.assign(d, drop(false));
     }
     raf = document.hidden ? 0 : requestAnimationFrame(frame);
+    if (!raf) last = 0;
   }
   size();
   addEventListener("resize", size);
@@ -99,7 +110,7 @@ const io = new IntersectionObserver(entries => {
     io.unobserve(e.target);
     if (e.target.classList.contains("eps")) setTimeout(() => e.target.classList.add("settled"), 1600);
   }
-}, { threshold: 0, rootMargin: "0px 0px -8% 0px" });
+}, { threshold: 0, rootMargin: "0px 0px 12% 0px" });   // 还没进画面就提前开始，不让人等
 document.querySelectorAll(".reveal").forEach(el => io.observe(el));
 
 // 导航和页码高亮当前页
