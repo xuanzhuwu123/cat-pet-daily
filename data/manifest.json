@@ -321,6 +321,17 @@
    "size": 6317440,
    "path": "daily/2026-10-22/mvk83nqeez95.png",
    "thumb": "daily/2026-10-22/mvk83nqeez95.thumb.webp"
+  },
+  {
+   "id": "mvly1yfbw6c8",
+   "day": "2026-10-23",
+   "note": "",
+   "time": "2026-10-24T05:14:10.439Z",
+   "kind": "file",
+   "name": "LS_Test10s.mp4",
+   "type": "video/mp4",
+   "size": 1624422,
+   "path": "daily/2026-10-23/mvly1yfbw6c8.mp4"
   }
  ]
 }
