@@ -332,6 +332,18 @@
    "type": "video/mp4",
    "size": 1624422,
    "path": "daily/2026-10-23/mvly1yfbw6c8.mp4"
+  },
+  {
+   "id": "mvnqivobvn92",
+   "day": "2026-10-24",
+   "note": "",
+   "time": "2026-10-25T11:18:55.451Z",
+   "kind": "file",
+   "name": "map_公寓区布局.png",
+   "type": "image/png",
+   "size": 3448826,
+   "path": "daily/2026-10-24/mvnqivobvn92.png",
+   "thumb": "daily/2026-10-24/mvnqivobvn92.thumb.webp"
   }
  ]
 }
